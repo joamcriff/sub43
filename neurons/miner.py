@@ -28,7 +28,7 @@ import graphite
 from graphite.base.miner import BaseMinerNeuron
 from graphite.protocol import IsAlive
 
-from graphite.solvers import NearestNeighbourSolver, DPSolver
+from graphite.solvers import NearestNeighbourSolver, DPSolver, HPNSolver
 from graphite.protocol import GraphProblem, GraphSynapse
 
 
@@ -54,8 +54,10 @@ class Miner(BaseMinerNeuron):
         )
 
         self.solvers = {
-            'small': DPSolver(),
-            'large': NearestNeighbourSolver()
+            'small': HPNSolver(),
+            'medium': HPNSolver(),
+            'large': HPNSolver(),
+            'veryLarge': HPNSolver()
         }
 
     async def is_alive(self, synapse: IsAlive) -> IsAlive:
@@ -87,14 +89,21 @@ class Miner(BaseMinerNeuron):
         
         bt.logging.info(
             f"Miner received input to solve {synapse.problem.n_nodes}"
+             f"Miner received input1 to solve {synapse.problem.nodes}"
         )
         # Conditional assignment of problems to each solver
         if synapse.problem.n_nodes < 15:
             # Solves the problem to optimality but is very computationally intensive
             route = await self.solvers['small'].solve_problem(synapse.problem)
+        elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
+            # Solves the problem to optimality but is very computationally intensive
+            route = await self.solvers['medium'].solve_problem(synapse.problem)
+        elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
+            # Solves the problem to optimality but is very computationally intensive
+            route = await self.solvers['large'].solve_problem(synapse.problem)
         else:
             # Simple heuristic that does not guarantee optimality. 
-            route = await self.solvers['large'].solve_problem(synapse.problem)
+            route = await self.solvers['veryLarge'].solve_problem(synapse.problem)
         synapse.solution = route
         
         bt.logging.info(
