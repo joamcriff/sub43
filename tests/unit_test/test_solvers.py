@@ -80,7 +80,7 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
         large_scores = {solver_name: large_score_handler.get_score(synapse) for solver_name, synapse in large_synapses.items()}
 
         # For the metric and the general scoring, we want to assert 
-        for compared_solver in [BeamSearchSolver]:
+        for compared_solver in [BeamSearchSolver, NearestNeighbourSolver(),  HPNSolver()]:
             self.assertLessEqual(round(metric_scores[DPSolver.__name__],5), round(metric_scores[compared_solver.__name__],5))
             self.assertLessEqual(round(general_scores[DPSolver.__name__],5), round(general_scores[compared_solver.__name__],5))
             self.assertGreater(large_scores[DPSolver.__name__], large_scores[compared_solver.__name__])
