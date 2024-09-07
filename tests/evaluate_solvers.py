@@ -17,7 +17,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import List
+from typing import List, Dict
 from graphite.solvers import *
 from graphite.dataset.dataset_generator import MetricTSPGenerator, GeneralTSPGenerator
 from graphite.protocol import GraphProblem, GraphSynapse
