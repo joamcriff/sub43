@@ -77,13 +77,4 @@ class DPSolver(BaseSolver):
         cols_with_only_inf = np.all(np.isinf(distance_arr) | np.isnan(distance_arr), axis=0)
         has_col_with_only_inf = np.any(cols_with_only_inf)
         return not has_col_with_only_inf and not has_row_with_only_inf
-    
-if __name__=="__main__":
-    # runs the solver on a test MetricTSP
-    n_nodes = 100
-    test_problem = GraphProblem(n_nodes=n_nodes)
-    solver = DPSolver(problem_types=[test_problem.problem_type])
-    start_time = time.time()
-    route = asyncio.run(solver.solve_problem(test_problem))
-    print(f"{solver.__class__.__name__} Solution: {route}")
-    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+
