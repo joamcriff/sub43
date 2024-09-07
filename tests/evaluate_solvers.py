@@ -56,7 +56,7 @@ def compare_problems(solvers: List[BaseSolver], problems: List[GraphProblem]) ->
     scores_dict = {solver.__class__.__name__: [] for solver in solvers}
 
     for i, solver in enumerate(solvers):
-        run_times = []
+        total_run_time = 0
         scores = []
         print(f"Running Solver {i+1} - {solver.__class__.__name__}")
         
@@ -66,26 +66,21 @@ def compare_problems(solvers: List[BaseSolver], problems: List[GraphProblem]) ->
             mock_synapse.solution = asyncio.run(solver.solve_problem(mock_synapse.problem))
             run_time = time.perf_counter() - start_time
             
-            # Add the run time to the list
-            run_times.append(run_time)
+            # Add the run time to the total run time
+            total_run_time += run_time
 
             # Tính tổng độ dài hành trình của solution và thêm vào danh sách scores
             path_length = get_tour_distance(mock_synapse)
             scores.append(path_length)
         
         # Lưu thời gian chạy và điểm số vào dictionary
-        run_times_dict[solver.__class__.__name__] = run_times
+        run_times_dict[solver.__class__.__name__] = [total_run_time]
         scores_dict[solver.__class__.__name__] = scores
         
-        # In ra thời gian hoàn thành của từng vấn đề
-        for idx, run_time in enumerate(run_times):
-            print(f"Solver {solver.__class__.__name__} - Problem {idx+1}: Time Taken = {run_time:.2f} seconds")
+        # In ra tổng thời gian hoàn thành và tổng độ dài hành trình
+        total_score = sum(scores)
+        print(f"Solver {solver.__class__.__name__}: Total path length = {total_score:.2f}, Total Time Taken = {total_run_time:.2f} seconds")
 
-    # Sau khi chạy tất cả các solver, in ra tổng độ dài hành trình
-    for solver_name, score_list in scores_dict.items():
-        total_score = sum(score_list)
-        print(f"Solver {solver_name}: Total path length: {total_score:.2f}")
-    
     return run_times_dict, scores_dict
 
 
