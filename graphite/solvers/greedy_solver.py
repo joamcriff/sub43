@@ -46,10 +46,19 @@ class NearestNeighbourSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
 
+  import numpy as np
+from typing import List, Union
+from graphite.solvers.base_solver import BaseSolver
+from graphite.protocol import GraphProblem
+
+class NearestNeighbourSolver(BaseSolver):
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
+        super().__init__(problem_types=problem_types)
+
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = formatted_problem
+        distance_matrix = np.array(formatted_problem)  # Convert to NumPy array for efficient operations
         n = len(distance_matrix[0])
-        visited = [False] * n
+        visited = np.full(n, False)
         route = []
         total_distance = 0
 
@@ -61,31 +70,20 @@ class NearestNeighbourSolver(BaseSolver):
             if self.future_tracker.get(future_id):
                 return None
 
-            # Find the nearest unvisited neighbor more efficiently
-            nearest_node, nearest_distance = self.find_nearest_neighbor(current_node, visited, distance_matrix)
+            # Find the nearest unvisited neighbor more efficiently using NumPy
+            unvisited_nodes = np.where(~visited)[0]
+            nearest_node = np.argmin(distance_matrix[current_node][unvisited_nodes])
+            nearest_distance = distance_matrix[current_node][unvisited_nodes[nearest_node]]
 
-            if nearest_node != -1:
-                route.append(nearest_node)
-                visited[nearest_node] = True
-                total_distance += nearest_distance
-                current_node = nearest_node
+            route.append(unvisited_nodes[nearest_node])
+            visited[unvisited_nodes[nearest_node]] = True
+            total_distance += nearest_distance
+            current_node = unvisited_nodes[nearest_node]
 
         # Return to the starting node
         total_distance += distance_matrix[current_node][route[0]]
         route.append(route[0])
         return route
-
-    def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-        n = len(visited)
-        nearest_distance = np.inf
-        nearest_node = -1
-
-        for j in range(n):
-            if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
-                nearest_distance = distance_matrix[current_node][j]
-                nearest_node = j
-
-        return nearest_node, nearest_distance
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
