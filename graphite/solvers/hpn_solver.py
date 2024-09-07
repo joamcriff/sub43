@@ -120,7 +120,7 @@ class HPNSolver(BaseSolver):
         return formatted_problem
         
 if __name__=='__main__':
-    n_nodes = 100
+    n_nodes = 10
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = HPNSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()

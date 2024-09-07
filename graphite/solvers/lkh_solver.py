@@ -7,7 +7,7 @@ from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 
 class LKHGeneticSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')],
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
                  population_size=10, max_population_size=50, runs=10, total_time_limit=3600, seed=1):
         super().__init__(problem_types=problem_types)
         self.population_size = population_size
@@ -19,7 +19,7 @@ class LKHGeneticSolver(BaseSolver):
         np.random.seed(seed)
     
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        self.distance_matrix = formatted_problem
+        self.distance_matrix = np.array(formatted_problem)
         self.n = len(formatted_problem)
         self.start_time = time.time()
         self.last_time = self.start_time
@@ -35,7 +35,7 @@ class LKHGeneticSolver(BaseSolver):
             tour, cost = self.find_tour()  # Using Lin-Kernighan heuristic
             
             self.update_population(cost)
-            self.update_best_tour(cost)
+            self.update_best_tour(tour, cost)
             self.perform_crossover()
             
             time_taken = time.time() - self.last_time
@@ -45,8 +45,6 @@ class LKHGeneticSolver(BaseSolver):
             if time.time() - self.start_time >= self.total_time_limit:
                 print("*** Time limit exceeded ***")
                 break
-
-        self.print_statistics()
         return self.best_tour
 
     def find_tour(self) -> Tuple[List[int], float]:
@@ -61,7 +59,7 @@ class LKHGeneticSolver(BaseSolver):
         return nodes
 
     def calculate_cost(self, tour: List[int]) -> float:
-        return sum(self.distance_matrix[tour[i]][tour[i + 1]] for i in range(len(tour) - 1)) + self.distance_matrix[tour[-1]][tour[0]]
+        return sum(self.distance_matrix[tour[i], tour[i + 1]] for i in range(len(tour) - 1)) + self.distance_matrix[tour[-1], tour[0]]
 
     def update_population(self, cost: float):
         new_tour = self.generate_initial_tour()
@@ -70,16 +68,15 @@ class LKHGeneticSolver(BaseSolver):
         if len(self.population) < self.max_population_size:
             self.population.append((new_tour, new_cost))
         else:
-            # Thay thế cá thể tồi nhất nếu chi phí mới tốt hơn
-            worst_tour = max(self.population, key=lambda t: t[1])  # tìm cá thể có chi phí cao nhất
+            worst_tour = max(self.population, key=lambda t: t[1])
             if new_cost < worst_tour[1]:
                 self.population.remove(worst_tour)
                 self.population.append((new_tour, new_cost))
             
-    def update_best_tour(self, cost: float):
+    def update_best_tour(self, tour: List[int], cost: float):
         if cost < self.best_cost:
             self.best_cost = cost
-            self.best_tour = self.generate_initial_tour()
+            self.best_tour = tour
 
     def perform_crossover(self):
         if len(self.population) >= 2:
@@ -93,15 +90,9 @@ class LKHGeneticSolver(BaseSolver):
         child = parent1[:half] + [node for node in parent2 if node not in parent1[:half]]
         return child
 
-    def update_statistics(self, cost: float, time_taken: float):
-        print(f"Run {self.runs}: Cost = {cost}, Time = {time_taken:.2f} sec")
-
-    def print_statistics(self):
-        print(f"Best Cost: {self.best_cost}")
-        print(f"Best Tour: {self.best_tour}")
-
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
-        return problem.edges  # Assume problem.edges gives the distance matrix
+        # Assuming problem.edges gives the distance matrix directly
+        return problem.edges  
 
 if __name__ == "__main__":
     # Run the solver on a test MetricTSP
@@ -109,6 +100,6 @@ if __name__ == "__main__":
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = LKHGeneticSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()
-    route = asyncio.run(solver.solve_problem(test_problem))
+    route = asyncio.run(solver.solve(test_problem.edges, future_id=1))  # Update call as per your actual method
     print(f"{solver.__class__.__name__} Solution: {route}")
     print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
