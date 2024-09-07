@@ -48,7 +48,7 @@ def can_show_plot():
 
     return True
 
-def compare_problems(solvers: List, problems: List[GraphProblem]):
+def compare_problems(solvers: List[BaseSolver], problems: List[GraphProblem]) -> Dict[str, List[float]]:
     problem_types = set([problem.problem_type for problem in problems])
     mock_synapses = [GraphSynapse(problem=problem) for problem in problems]
     results = {solver.__class__.__name__: [] for solver in solvers}
@@ -76,6 +76,10 @@ def compare_problems(solvers: List, problems: List[GraphProblem]):
         # Lưu thời gian chạy và điểm số vào dictionary
         run_times_dict[solver.__class__.__name__] = run_times
         scores_dict[solver.__class__.__name__] = scores
+        
+        # In ra thời gian hoàn thành của từng vấn đề
+        for idx, run_time in enumerate(run_times):
+            print(f"Solver {solver.__class__.__name__} - Problem {idx+1}: Time Taken = {run_time:.2f} seconds")
 
     # Sau khi chạy tất cả các solver, in ra tổng độ dài hành trình
     for solver_name, score_list in scores_dict.items():
