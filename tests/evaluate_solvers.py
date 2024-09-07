@@ -89,7 +89,7 @@ def main():
     # Use MetricTSPGenerator to generate problems of various graph sizes
     metric_problems, metric_sizes = MetricTSPGenerator.generate_n_samples(N_PROBLEMS)
 
-    test_solvers = [NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver()]
+    test_solvers = [NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver(), LKHGeneticSolver()]
 
     run_times_dict, scores_dict = compare_problems(test_solvers, metric_problems)
 

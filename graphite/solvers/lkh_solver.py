@@ -17,7 +17,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import List
+from typing import List, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 from graphite.utils.graph_utils import timeout
@@ -32,7 +32,7 @@ class LKHGeneticSolver(BaseSolver):
         self.runs = runs  # Số lần chạy GA
         self.max_trials = max_trials  # Số lần thử tối đa cho ILK (LKH)
     
-    async def solve(self, formatted_problem, future_id: int, beam_width: int = 2) -> List[int]:
+    async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int, beam_width: int = 2) -> List[int]:
         """
         Solve the given formatted problem using the LKH algorithm combined with Genetic Algorithm (GA).
         
@@ -79,18 +79,6 @@ class LKHGeneticSolver(BaseSolver):
         best_tour = self.find_best_tour(population, distance_matrix)
         return best_tour
     
-    def problem_transformations(self, problem: GraphProblem):
-        """
-        Apply necessary transformations to the problem to prepare it for the solve method.
-        
-        Args:
-            problem (GraphProblem): The input graph problem.
-        
-        Returns:
-            List[List[int]]: The transformed distance matrix.
-        """
-        return problem.edges  # Assume problem.edges gives the distance matrix
-    
     # Các hàm hỗ trợ khác vẫn giữ nguyên như đã mô tả ở phần trước
     def generate_initial_tour(self, n):
         return list(range(n))
@@ -128,6 +116,18 @@ class LKHGeneticSolver(BaseSolver):
 
     def find_best_tour(self, population, distance_matrix):
         return min(population, key=lambda t: self.cost(t, distance_matrix))
+    
+    def problem_transformations(self, problem: GraphProblem):
+        """
+        Apply necessary transformations to the problem to prepare it for the solve method.
+        
+        Args:
+            problem (GraphProblem): The input graph problem.
+        
+        Returns:
+            List[List[int]]: The transformed distance matrix.
+        """
+        return problem.edges  # Assume problem.edges gives the distance matrix
     
 if __name__=='__main__':
     # runs the solver on a test MetricTSP

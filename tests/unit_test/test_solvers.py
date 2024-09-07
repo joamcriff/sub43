@@ -3,7 +3,7 @@ This script tests all the solvers against each other. Note that this test takes 
 '''
 
 import unittest
-from graphite.solvers import NearestNeighbourSolver, BeamSearchSolver, DPSolver, HPNSolver
+from graphite.solvers import NearestNeighbourSolver, BeamSearchSolver, DPSolver, HPNSolver, LKHGeneticSolver
 from graphite.solvers.greedy_solver_vali import NearestNeighbourSolverVali
 from graphite.protocol import GraphSynapse, GraphProblem
 from graphite.validator.reward import ScoreResponse
@@ -63,7 +63,7 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
 
     async def test_solvers(self):
         # check to assert that heuristics are not better than exact solver
-        solvers = [DPSolver(), NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver()]
+        solvers = [DPSolver(), NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver(), LKHGeneticSolver()]
         metric_solutions = {solver.__class__.__name__: await solver.solve_problem(self.metric_tsp) for solver in solvers}
         metric_synapses = {solver_type: GraphSynapse(problem=self.metric_tsp, solution=solution) for solver_type, solution in metric_solutions.items()}
         general_solutions = {solver.__class__.__name__: await solver.solve_problem(self.general_tsp) for solver in solvers}
@@ -81,7 +81,7 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
         large_scores = {solver_name: large_score_handler.get_score(synapse) for solver_name, synapse in large_synapses.items()}
 
         # For the metric and the general scoring, we want to assert 
-        for compared_solver in [NearestNeighbourSolver, BeamSearchSolver, HPNSolver]:
+        for compared_solver in [NearestNeighbourSolver, BeamSearchSolver, HPNSolver, LKHGeneticSolver]:
             self.assertLessEqual(round(metric_scores[DPSolver.__name__],5), round(metric_scores[compared_solver.__name__],5))
             self.assertLessEqual(round(general_scores[DPSolver.__name__],5), round(general_scores[compared_solver.__name__],5))
             self.assertGreater(large_scores[DPSolver.__name__], large_scores[compared_solver.__name__])
