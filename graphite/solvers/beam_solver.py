@@ -67,7 +67,7 @@ class BeamSearchSolver(BaseSolver):
     
 if __name__=='__main__':
     # runs the solver on a test MetricTSP
-    n_nodes = 25
+    n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = BeamSearchSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()
