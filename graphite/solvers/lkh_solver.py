@@ -1,28 +1,11 @@
-# The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# Graphite-AI
-# Copyright © 2024 Graphite-AI
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
 from typing import List, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 from graphite.utils.graph_utils import timeout
 import asyncio
 import time
+import numpy as np
+import random
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')],
@@ -32,18 +15,7 @@ class LKHGeneticSolver(BaseSolver):
         self.runs = runs  # Số lần chạy GA
         self.max_trials = max_trials  # Số lần thử tối đa cho ILK (LKH)
     
-    async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int, beam_width: int = 2) -> List[int]:
-        """
-        Solve the given formatted problem using the LKH algorithm combined with Genetic Algorithm (GA).
-        
-        Args:
-            formatted_problem (List[List[int]]): The distance matrix.
-            future_id (int): The unique identifier for the current solve task.
-            beam_width (int): Beam width for the beam search (default is 3).
-        
-        Returns:
-            List[int]: The optimal tour path.
-        """
+    async def solve(self, formatted_problem, future_id: int, beam_width: int = 2) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix)
         
@@ -79,16 +51,40 @@ class LKHGeneticSolver(BaseSolver):
         best_tour = self.find_best_tour(population, distance_matrix)
         return best_tour
     
-    # Các hàm hỗ trợ khác vẫn giữ nguyên như đã mô tả ở phần trước
     def generate_initial_tour(self, n):
         return list(range(n))
-
+    
     def iterated_lin_kernighan(self, tour, distance_matrix):
-        return tour
-
+        def cost(tour, distance_matrix):
+            return sum(distance_matrix[tour[i]][tour[i + 1]] for i in range(len(tour) - 1)) + distance_matrix[tour[-1]][tour[0]]
+        
+        def swap_two_edges(tour, i, j):
+            new_tour = tour[:i+1] + list(reversed(tour[i+1:j+1])) + tour[j+1:]
+            return new_tour
+        
+        best_tour = tour[:]
+        best_cost = cost(best_tour, distance_matrix)
+        improved = True
+        
+        while improved:
+            improved = False
+            for i in range(len(tour)):
+                for j in range(i + 2, len(tour)):
+                    if i == 0 and j == len(tour) - 1:
+                        continue
+                    new_tour = swap_two_edges(best_tour, i, j)
+                    new_cost = cost(new_tour, distance_matrix)
+                    if new_cost < best_cost:
+                        best_tour = new_tour
+                        best_cost = new_cost
+                        improved = True
+        
+        return best_tour
+    
     def itp(self, tour, population, distance_matrix):
-        return tour
-
+        improved_tour = self.iterated_lin_kernighan(tour, distance_matrix)
+        return improved_tour
+    
     def has_same_cost(self, tour, population, distance_matrix):
         for p in population:
             if self.cost(tour, distance_matrix) == self.cost(p, distance_matrix):
@@ -118,15 +114,6 @@ class LKHGeneticSolver(BaseSolver):
         return min(population, key=lambda t: self.cost(t, distance_matrix))
     
     def problem_transformations(self, problem: GraphProblem):
-        """
-        Apply necessary transformations to the problem to prepare it for the solve method.
-        
-        Args:
-            problem (GraphProblem): The input graph problem.
-        
-        Returns:
-            List[List[int]]: The transformed distance matrix.
-        """
         return problem.edges  # Assume problem.edges gives the distance matrix
     
 if __name__=='__main__':
@@ -138,4 +125,3 @@ if __name__=='__main__':
     route = asyncio.run(solver.solve_problem(test_problem))
     print(f"{solver.__class__.__name__} Solution: {route}")
     print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    
