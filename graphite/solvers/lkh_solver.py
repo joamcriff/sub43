@@ -22,7 +22,6 @@ class LKHGeneticSolver(BaseSolver):
         self.distance_matrix = np.array(formatted_problem)
         self.n = len(formatted_problem)
         self.start_time = time.time()
-        self.last_time = self.start_time
         self.best_cost = float('inf')
         self.best_tour = None
         
@@ -34,10 +33,9 @@ class LKHGeneticSolver(BaseSolver):
             
             tour, cost = self.find_tour()  # Using Lin-Kernighan heuristic
             
-            self.update_population(cost)
+            self.update_population(tour, cost)
             self.update_best_tour(tour, cost)
             self.perform_crossover()
-            self.last_time = time.time()
             
             if time.time() - self.start_time >= self.total_time_limit:
                 print("*** Time limit exceeded ***")
@@ -47,6 +45,7 @@ class LKHGeneticSolver(BaseSolver):
     def find_tour(self) -> Tuple[List[int], float]:
         # Placeholder for Lin-Kernighan heuristic
         initial_tour = self.generate_initial_tour()
+        initial_tour = self.ensure_complete_tour(initial_tour)
         cost = self.calculate_cost(initial_tour)
         return initial_tour, cost
     
@@ -54,12 +53,21 @@ class LKHGeneticSolver(BaseSolver):
         nodes = list(range(self.n))
         random.shuffle(nodes)
         return nodes
+    
+    def ensure_complete_tour(self, tour: List[int]) -> List[int]:
+        # Ensure the tour includes all nodes and starts and ends at 0
+        if tour[0] != 0:
+            tour = [0] + [node for node in tour if node != 0]
+        if tour[-1] != 0:
+            tour.append(0)
+        return tour
 
     def calculate_cost(self, tour: List[int]) -> float:
-        return sum(self.distance_matrix[tour[i], tour[i + 1]] for i in range(len(tour) - 1)) + self.distance_matrix[tour[-1], tour[0]]
+        return sum(self.distance_matrix[tour[i], tour[i + 1]] for i in range(len(tour) - 1))
 
-    def update_population(self, cost: float):
+    def update_population(self, tour: List[int], cost: float):
         new_tour = self.generate_initial_tour()
+        new_tour = self.ensure_complete_tour(new_tour)
         new_cost = self.calculate_cost(new_tour)
         
         if len(self.population) < self.max_population_size:
@@ -79,8 +87,9 @@ class LKHGeneticSolver(BaseSolver):
         if len(self.population) >= 2:
             parent1, parent2 = random.sample(self.population, 2)
             child_tour = self.crossover(parent1[0], parent2[0])
+            child_tour = self.ensure_complete_tour(child_tour)
             child_cost = self.calculate_cost(child_tour)
-            self.update_population(child_cost)
+            self.update_population(child_tour, child_cost)
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
         half = len(parent1) // 2
