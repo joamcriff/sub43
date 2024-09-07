@@ -57,6 +57,7 @@ def compare_problems(solvers: List, problems: List[GraphProblem]):
 
     for i, solver in enumerate(solvers):
         run_times = []
+        scores = []
         print(f"Running Solver {i+1} - {solver.__class__.__name__}")
         
         for mock_synapse in tqdm.tqdm(mock_synapses, desc=f"{solver.__class__.__name__} solving {problem_types}"):
@@ -68,18 +69,18 @@ def compare_problems(solvers: List, problems: List[GraphProblem]):
             # Add the run time to the list
             run_times.append(run_time)
 
-            # Tính tổng độ dài hành trình của solution
+            # Tính tổng độ dài hành trình của solution và thêm vào danh sách scores
             path_length = get_tour_distance(mock_synapse)
-            
-            # In độ dài hành trình ra màn hình
-            print(f"Solver {solver.__class__.__name__}: Path length for problem {mock_synapse.problem.problem_type}: {path_length:.2f}")
-        
-        # Tính điểm cho mỗi solver
-        scores = [get_tour_distance(mock_synapse) for mock_synapse in mock_synapses]
+            scores.append(path_length)
         
         # Lưu thời gian chạy và điểm số vào dictionary
         run_times_dict[solver.__class__.__name__] = run_times
         scores_dict[solver.__class__.__name__] = scores
+
+    # Sau khi chạy tất cả các solver, in ra tổng độ dài hành trình
+    for solver_name, score_list in scores_dict.items():
+        total_score = sum(score_list)
+        print(f"Solver {solver_name}: Total path length: {total_score:.2f}")
     
     return run_times_dict, scores_dict
 
