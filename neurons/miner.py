@@ -28,7 +28,7 @@ import graphite
 from graphite.base.miner import BaseMinerNeuron
 from graphite.protocol import IsAlive
 
-from graphite.solvers import NearestNeighbourSolver, DPSolver, HPNSolver
+from graphite.solvers import NearestNeighbourSolver, DPSolver, HPNSolver, DPSolver, BeamSearchSolver, LKHGeneticSolver
 from graphite.protocol import GraphProblem, GraphSynapse
 
 
@@ -54,10 +54,14 @@ class Miner(BaseMinerNeuron):
         )
 
         self.solvers = {
-            'small': HPNSolver(),
-            'medium': HPNSolver(),
-            'large': HPNSolver(),
-            'veryLarge': HPNSolver()
+            'small': DPSolver(),
+            'medium': BeamSearchSolver(),
+            'large': LKHGeneticSolver(),
+            'veryLarge': LKHGeneticSolver(),
+            'small1': DPSolver(),
+            'medium1': NearestNeighbourSolver(),
+            'large1': LKHGeneticSolver(),
+            'veryLarge1': LKHGeneticSolver()
         }
 
     async def is_alive(self, synapse: IsAlive) -> IsAlive:
@@ -86,26 +90,42 @@ class Miner(BaseMinerNeuron):
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         bt.logging.info(f"received synapse with problem: {synapse.problem.get_info(verbosity=2)}")
-        
+        bt.logging.info(f"received synapse with problem: {synapse.problem.problem_type}")
         bt.logging.info(
-            f"Miner received input to solve {synapse.problem.n_nodes}"
-             f"Miner received input1 to solve {synapse.problem.nodes}"
+            f"Miner received input to solve {synapse.problem.n_nodes}" 
         )
-        # Conditional assignment of problems to each solver
-        if synapse.problem.n_nodes < 15:
-            # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['small'].solve_problem(synapse.problem)
-        elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
-            # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['medium'].solve_problem(synapse.problem)
-        elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
-            # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['large'].solve_problem(synapse.problem)
-        else:
-            # Simple heuristic that does not guarantee optimality. 
-            route = await self.solvers['veryLarge'].solve_problem(synapse.problem)
+        bt.logging.info(
+            f"Miner received input1 to solve {synapse.problem.nodes}"
+        )
+        if synapse.problem.problem_type == "General TSP":
+            # Conditional assignment of problems to each solver
+            if synapse.problem.n_nodes < 15:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['small'].solve_problem(synapse.problem)
+            elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['medium'].solve_problem(synapse.problem)
+            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['large'].solve_problem(synapse.problem)
+            else:
+                # Simple heuristic that does not guarantee optimality. 
+                route = await self.solvers['veryLarge'].solve_problem(synapse.problem)
+        else: 
+            # Conditional assignment of problems to each solver
+            if synapse.problem.n_nodes < 15:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['small1'].solve_problem(synapse.problem)
+            elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['medium1'].solve_problem(synapse.problem)
+            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
+                # Solves the problem to optimality but is very computationally intensive
+                route = await self.solvers['large1'].solve_problem(synapse.problem)
+            else:
+                # Simple heuristic that does not guarantee optimality. 
+                route = await self.solvers['veryLarge1'].solve_problem(synapse.problem)              
         synapse.solution = route
-        
         bt.logging.info(
             f"Miner returned value {synapse.solution} {len(synapse.solution) if isinstance(synapse.solution, list) else synapse.solution}"
         )
