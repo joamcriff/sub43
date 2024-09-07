@@ -59,6 +59,14 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
         large_solution = await solver.solve_problem(self.large_tsp)
         self.assertEqual(is_valid_solution(self.metric_tsp, metric_solution),True)
         self.assertEqual(is_valid_solution(self.general_tsp, general_solution),False)
+        self.assertEqual(is_valid_solution(self.large_tsp, large_solution),True)  
+    async def test_lkh_solver(self):
+        solver = LKHGeneticSolver()
+        metric_solution = await solver.solve_problem(self.metric_tsp)
+        general_solution = await solver.solve_problem(self.general_tsp)
+        large_solution = await solver.solve_problem(self.large_tsp)
+        self.assertEqual(is_valid_solution(self.metric_tsp, metric_solution),True)
+        self.assertEqual(is_valid_solution(self.general_tsp, general_solution),False)
         self.assertEqual(is_valid_solution(self.large_tsp, large_solution),True)
 
     async def test_solvers(self):
