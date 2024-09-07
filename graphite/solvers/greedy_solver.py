@@ -17,7 +17,7 @@ class NearestNeighbourSolver(BaseSolver):
         best_cost = float('inf')
 
         for _ in range(10):  # Try multiple random starts
-            route = self.nearest_neighbour(distance_matrix)
+            route = self.nearest_neighbour(distance_matrix, future_id)
             route = self.two_opt(route, distance_matrix)
             cost = self.calculate_cost(route, distance_matrix)
             if cost < best_cost:
@@ -26,7 +26,7 @@ class NearestNeighbourSolver(BaseSolver):
         
         return best_route
 
-    def nearest_neighbour(self, distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+    def nearest_neighbour(self, distance_matrix: List[List[Union[int, float]]], future_id: int) -> List[int]:
         n = len(distance_matrix[0])
         visited = [False] * n
         route = []
