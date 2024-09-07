@@ -37,9 +37,6 @@ class LKHGeneticSolver(BaseSolver):
             self.update_population(cost)
             self.update_best_tour(tour, cost)
             self.perform_crossover()
-            
-            time_taken = time.time() - self.last_time
-            self.update_statistics(cost, time_taken)
             self.last_time = time.time()
             
             if time.time() - self.start_time >= self.total_time_limit:
