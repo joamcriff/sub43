@@ -43,12 +43,12 @@ class NearestNeighbourSolver(BaseSolver):
         route.append(current_node)
         visited[current_node] = True
 
-        for node in range(n - 1):
+        for _ in range(n - 1):
             if self.future_tracker.get(future_id):
                 return None
             # Find the nearest unvisited neighbour
             nearest_distance = np.inf
-            nearest_node = random.choice([i for i, is_visited in enumerate(visited) if not is_visited])# pre-set as random unvisited node
+            nearest_node = -1
             for j in range(n):
                 if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
                     nearest_distance = distance_matrix[current_node][j]
@@ -64,6 +64,7 @@ class NearestNeighbourSolver(BaseSolver):
         total_distance += distance_matrix[current_node][route[0]]
         route.append(route[0])
         return route
+
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
