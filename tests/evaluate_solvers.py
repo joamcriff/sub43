@@ -32,7 +32,7 @@ import os
 
 ROOT_DIR = "tests"
 SAVE_DIR = "evaluation_results"
-N_PROBLEMS = 1000
+N_PROBLEMS = 100
 
 def can_show_plot():
     # Check if running in a headless environment
@@ -106,7 +106,7 @@ def main():
     # Use MetricTSPGenerator to generate problems of various graph sizes
     metric_problems, metric_sizes = GeneralTSPGenerator.generate_n_samples(N_PROBLEMS)
     # NearestNeighbourSolver(),  HPNSolver()
-    test_solvers = [BeamSearchSolver(), NearestNeighbourSolver(),  HPNSolver()]
+    test_solvers = [BeamSearchSolver(), NearestNeighbourSolver()]
 
     run_times_dict, scores_dict = compare_problems(test_solvers, metric_problems)
 
