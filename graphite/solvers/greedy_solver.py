@@ -65,7 +65,7 @@ class NearestNeighbourSolver(BaseSolver):
         return best_tour
 
     def calculate_cost(self, tour: List[int], distance_matrix: List[List[Union[int, float]]]) -> float:
-        return sum(distance_matrix[tour[i], tour[i + 1]] for i in range(len(tour) - 1))
+        return sum(distance_matrix[tour[i]][tour[i + 1]] for i in range(len(tour) - 1))
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges  
