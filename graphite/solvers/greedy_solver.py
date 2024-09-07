@@ -13,6 +13,21 @@ class NearestNeighbourSolver(BaseSolver):
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
+        best_route = None
+        best_cost = float('inf')
+
+        for _ in range(10):  # Try multiple random starts
+            route = self.nearest_neighbour(distance_matrix)
+            route = self.two_opt(route, distance_matrix)
+            cost = self.calculate_cost(route, distance_matrix)
+            if cost < best_cost:
+                best_cost = cost
+                best_route = route
+        
+        return best_route
+
+    def nearest_neighbour(self, distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+        n = len(distance_matrix[0])
         visited = [False] * n
         route = []
         total_distance = 0
@@ -21,11 +36,11 @@ class NearestNeighbourSolver(BaseSolver):
         route.append(current_node)
         visited[current_node] = True
 
-        for node in range(n - 1):
+        for _ in range(n - 1):
             if self.future_tracker.get(future_id):
                 return None
             nearest_distance = np.inf
-            nearest_node = random.choice([i for i, is_visited in enumerate(visited) if not is_visited])
+            nearest_node = None
             for j in range(n):
                 if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
                     nearest_distance = distance_matrix[current_node][j]
@@ -38,10 +53,6 @@ class NearestNeighbourSolver(BaseSolver):
         
         total_distance += distance_matrix[current_node][route[0]]
         route.append(route[0])
-
-        # Apply 2-opt to improve the tour
-        route = self.two_opt(route, distance_matrix)
-        
         return route
 
     def two_opt(self, tour: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
