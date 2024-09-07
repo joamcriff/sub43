@@ -42,23 +42,18 @@ from typing import List, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 
-class NearestNeighbourSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
-        super().__init__(problem_types=problem_types)
-
-  import numpy as np
+import heapq
+import numpy as np
 from typing import List, Union
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphProblem
 
 class NearestNeighbourSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = np.array(formatted_problem)  # Convert to NumPy array for efficient operations
+        distance_matrix = formatted_problem
         n = len(distance_matrix[0])
-        visited = np.full(n, False)
+        visited = [False] * n
         route = []
         total_distance = 0
 
@@ -70,23 +65,39 @@ class NearestNeighbourSolver(BaseSolver):
             if self.future_tracker.get(future_id):
                 return None
 
-            # Find the nearest unvisited neighbor more efficiently using NumPy
-            unvisited_nodes = np.where(~visited)[0]
-            nearest_node = np.argmin(distance_matrix[current_node][unvisited_nodes])
-            nearest_distance = distance_matrix[current_node][unvisited_nodes[nearest_node]]
+            # Sử dụng hàng đợi ưu tiên để tìm hàng xóm gần nhất
+            nearest_node, nearest_distance = self.find_nearest_neighbor(current_node, visited, distance_matrix)
 
-            route.append(unvisited_nodes[nearest_node])
-            visited[unvisited_nodes[nearest_node]] = True
-            total_distance += nearest_distance
-            current_node = unvisited_nodes[nearest_node]
+            if nearest_node != -1:
+                route.append(nearest_node)
+                visited[nearest_node] = True
+                total_distance += nearest_distance
+                current_node = nearest_node
 
-        # Return to the starting node
+        # Quay trở lại nút bắt đầu
         total_distance += distance_matrix[current_node][route[0]]
         route.append(route[0])
         return route
 
+    def find_nearest_neighbor(self, current_node, visited, distance_matrix):
+        n = len(visited)
+        priority_queue = []
+
+        # Khởi tạo hàng đợi ưu tiên với tất cả các nút chưa được thăm
+        for j in range(n):
+            if not visited[j]:
+                heapq.heappush(priority_queue, (distance_matrix[current_node][j], j))
+
+        while priority_queue:
+            nearest_distance, nearest_node = heapq.heappop(priority_queue)
+            if not visited[nearest_node]:
+                return nearest_node, nearest_distance
+
+        return -1, np.inf
+
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
+
         
 if __name__=="__main__":
     # runs the solver on a test MetricTSP
