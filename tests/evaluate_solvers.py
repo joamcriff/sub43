@@ -54,18 +54,35 @@ def compare_problems(solvers: List, problems: List[GraphProblem]):
     results = {solver.__class__.__name__: [] for solver in solvers}
     run_times_dict = {solver.__class__.__name__: [] for solver in solvers}
     scores_dict = {solver.__class__.__name__: [] for solver in solvers}
+
     for i, solver in enumerate(solvers):
         run_times = []
         print(f"Running Solver {i+1} - {solver.__class__.__name__}")
+        
         for mock_synapse in tqdm.tqdm(mock_synapses, desc=f"{solver.__class__.__name__} solving {problem_types}"):
+            # Start the timer and run the solver
             start_time = time.perf_counter()
             mock_synapse.solution = asyncio.run(solver.solve_problem(mock_synapse.problem))
             run_time = time.perf_counter() - start_time
+            
+            # Add the run time to the list
             run_times.append(run_time)
+
+            # Tính tổng độ dài hành trình của solution
+            path_length = get_tour_distance(mock_synapse)
+            
+            # In độ dài hành trình ra màn hình
+            print(f"Solver {solver.__class__.__name__}: Path length for problem {mock_synapse.problem.problem_type}: {path_length:.2f}")
+        
+        # Tính điểm cho mỗi solver
         scores = [get_tour_distance(mock_synapse) for mock_synapse in mock_synapses]
+        
+        # Lưu thời gian chạy và điểm số vào dictionary
         run_times_dict[solver.__class__.__name__] = run_times
         scores_dict[solver.__class__.__name__] = scores
+    
     return run_times_dict, scores_dict
+
 
 def compute_relative_scores(scores_df: pd.DataFrame, tolerance=1e-5):
     relative_scores = pd.DataFrame(index=scores_df.index)
