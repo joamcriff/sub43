@@ -30,6 +30,6 @@ COST_FUNCTIONS = {
     'General TSP': get_tour_distance
 }
 
-HEURISTIC_SOLVERS = [NearestNeighbourSolver, BeamSearchSolver, HPNSolver]
+HEURISTIC_SOLVERS = [NearestNeighbourSolver, BeamSearchSolver, HPNSolver, LKHGeneticSolver]
 
 EXACT_SOLVERS = [DPSolver]

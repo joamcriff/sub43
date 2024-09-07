@@ -25,7 +25,7 @@ import asyncio
 import time
 
 class LKHGeneticSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='')],
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')],
                  population_size=10, runs=20, max_trials=500):
         super().__init__(problem_types=problem_types)
         self.population_size = population_size  # Kích thước quần thể
