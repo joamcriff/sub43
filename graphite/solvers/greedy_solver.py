@@ -9,31 +9,17 @@ from typing import List, Union, Tuple
 class NearestNeighbourSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.used_start_nodes = set()  # Lưu trữ các điểm bắt đầu đã được sử dụng
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
-        num_starts = max(n // 2, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
+        num_starts = max(n//3, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
         best_total_distance = float('inf')
 
-        # Lọc các điểm bắt đầu đã được dùng
-        available_start_nodes = list(set(range(n)) - self.used_start_nodes)
-
-        # Nếu không còn đủ điểm bắt đầu chưa được dùng, reset danh sách và chọn lại từ đầu
-        if len(available_start_nodes) < num_starts:
-            self.used_start_nodes.clear()
-            available_start_nodes = list(range(n))
-
-        # Chọn num_starts điểm bắt đầu không trùng lặp
-        start_nodes = random.sample(available_start_nodes, min(num_starts, len(available_start_nodes)))
-
-        # Cập nhật các điểm bắt đầu đã sử dụng
-        self.used_start_nodes.update(start_nodes)
-
         # Tìm kiếm nhiều hướng đồng thời
+        start_nodes = random.sample(range(n), min(num_starts, n))  # Chọn num_starts điểm bắt đầu ngẫu nhiên
         routes = await asyncio.gather(
             *[self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in start_nodes]
         )
@@ -44,7 +30,10 @@ class NearestNeighbourSolver(BaseSolver):
                 best_total_distance = total_distance
                 best_route = route
 
-        return best_route
+        # Áp dụng 2-opt để tối ưu hóa đường đi
+        optimized_route = self.two_opt(best_route, distance_matrix)
+
+        return optimized_route
 
     async def find_route_from_start(self, distance_matrix: List[List[Union[int, float]]], start_node: int, n: int, future_id: int) -> Tuple[List[int], float]:
         visited = [False] * n
@@ -81,6 +70,39 @@ class NearestNeighbourSolver(BaseSolver):
         route.append(start_node)
 
         return route, total_distance
+
+    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]], max_iterations: int = 100, tolerance: float = 0.01) -> List[int]:
+        """Thực hiện thuật toán 2-opt để tối ưu hóa tuyến đường."""
+        def calculate_total_distance(route):
+            return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
+
+        n = len(route)
+        best_distance = calculate_total_distance(route)
+        iteration_count = 0
+        improved = True
+
+        while improved and iteration_count < max_iterations:
+            improved = False
+            iteration_count += 1
+
+            for i in range(1, n - 2):
+                for j in range(i + 1, n - 1):
+                    # Hoán đổi hai cạnh (i-1,i) và (j,j+1)
+                    new_route = route[:i] + route[i:j + 1][::-1] + route[j + 1:]
+                    new_distance = calculate_total_distance(new_route)
+
+                    if new_distance < best_distance:
+                        improvement_ratio = (best_distance - new_distance) / best_distance
+
+                        if improvement_ratio < tolerance:
+                            return route  # Dừng sớm nếu cải thiện không đáng kể
+
+                        route = new_route
+                        best_distance = new_distance
+                        improved = True
+                        break  # Chỉ áp dụng thay đổi đầu tiên tìm thấy để giảm số lần lặp
+
+        return route
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
