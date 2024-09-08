@@ -30,12 +30,12 @@ class BeamSearchSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
 
     def heuristic_estimate(self, path, distance_matrix):
-        # Ước lượng khoảng cách còn lại dựa trên khoảng cách gần nhất từ nút cuối cùng
+        if not isinstance(path, list):
+            raise TypeError("path should be a list")
         last_node = path[-1]
         remaining_nodes = [i for i in range(len(distance_matrix)) if i not in path]
         if not remaining_nodes:
             return 0
-        # Tính khoảng cách gần nhất đến các nút còn lại
         min_distance = min(distance_matrix[last_node][i] for i in remaining_nodes)
         return min_distance
 
@@ -58,7 +58,7 @@ class BeamSearchSolver(BaseSolver):
                         candidates.append((new_distance + heuristic, next_node, new_path))
 
             candidates = heapq.nsmallest(beam_width, candidates)
-            beam = [(dist, path[-1], path) for dist, _, path in candidates]
+            beam = [(dist, path, path) for dist, _, path in candidates]
 
         final_candidates = []
         for _, path, current_distance in beam:
