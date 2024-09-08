@@ -20,31 +20,10 @@
 from typing import List, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
-from graphite.utils.graph_utils import timeout
+import heapq
 import numpy as np
 import time
 import asyncio
-import random
-
-import bittensor as bt
-
-import numpy as np
-from typing import List, Union
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphProblem
-
-class NearestNeighbourSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
-        super().__init__(problem_types=problem_types)
-
-    import numpy as np
-from typing import List, Union
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphProblem
-
-import heapq
-import numpy as np
-from typing import List, Union
 
 class NearestNeighbourSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
@@ -77,6 +56,9 @@ class NearestNeighbourSolver(BaseSolver):
         # Quay trở lại nút bắt đầu
         total_distance += distance_matrix[current_node][route[0]]
         route.append(route[0])
+
+        # Áp dụng thuật toán 2-opt để cải thiện giải pháp
+        route = self.two_opt(route, distance_matrix)
         return route
 
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
@@ -95,11 +77,33 @@ class NearestNeighbourSolver(BaseSolver):
 
         return -1, np.inf
 
+    def two_opt(self, route, distance_matrix):
+        size = len(route)
+        best_route = route[:]
+        best_distance = self.calculate_total_distance(best_route, distance_matrix)
+        improved = True
+
+        while improved:
+            improved = False
+            for i in range(1, size - 2):
+                for j in range(i + 2, size):
+                    if j - i == 1: continue  # Skip adjacent edges
+                    new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
+                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
+                    if new_distance < best_distance:
+                        best_route = new_route
+                        best_distance = new_distance
+                        improved = True
+
+        return best_route
+
+    def calculate_total_distance(self, route, distance_matrix):
+        return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
+
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
 
-        
-if __name__=="__main__":
+if __name__ == "__main__":
     # runs the solver on a test MetricTSP
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
@@ -107,4 +111,4 @@ if __name__=="__main__":
     start_time = time.time()
     route = asyncio.run(solver.solve_problem(test_problem))
     print(f"{solver.__class__.__name__} Solution: {route}")
-    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
