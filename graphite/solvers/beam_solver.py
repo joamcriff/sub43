@@ -28,7 +28,7 @@ class BeamSearchSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphProblem]=[GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
 
-    async def solve(self, formatted_problem, future_id:int, beam_width:int=50)->List[int]:
+    async def solve(self, formatted_problem, future_id:int, beam_width:int=20)->List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
 
