@@ -61,7 +61,7 @@ class Miner(BaseMinerNeuron):
             'small1': DPSolver(),
             'medium1': NearestNeighbourSolver(),
             'large1': NearestNeighbourSolver(),
-            'veryLarge1': NearestNeighbourSolver()
+            'veryLarge1': LKHGeneticSolver()
         }
 
     async def is_alive(self, synapse: IsAlive) -> IsAlive:

@@ -13,7 +13,7 @@ class NearestNeighbourSolver(BaseSolver):
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
-        num_starts = max(n, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
+        num_starts = max(n//2, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
         best_total_distance = float('inf')
