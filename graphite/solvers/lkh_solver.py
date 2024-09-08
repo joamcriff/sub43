@@ -8,7 +8,7 @@ from graphite.protocol import GraphProblem
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
-                 population_size=10, max_population_size=50, runs=10, total_time_limit=3600, seed=1):
+                 population_size=50, max_population_size=100, runs=20, total_time_limit=3600, seed=42):
         super().__init__(problem_types=problem_types)
         self.population_size = population_size
         self.max_population_size = max_population_size
