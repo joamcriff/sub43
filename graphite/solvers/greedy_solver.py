@@ -7,8 +7,10 @@ import random
 from typing import List, Union, Tuple
 
 class NearestNeighbourSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')],
+                 num_starts: int = 5):  # Số lượng điểm khởi đầu giảm xuống
         super().__init__(problem_types=problem_types)
+        self.num_starts = num_starts
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
@@ -16,9 +18,9 @@ class NearestNeighbourSolver(BaseSolver):
         best_route = None
         best_total_distance = float('inf')
 
-        # Tìm kiếm nhiều hướng đồng thời
+        start_nodes = random.sample(range(n), min(self.num_starts, n))  # Chọn một số điểm khởi đầu ngẫu nhiên
         routes = await asyncio.gather(
-            *[self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in range(n)]
+            *[self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in start_nodes]
         )
 
         # Chọn đường đi tốt nhất
@@ -68,12 +70,11 @@ class NearestNeighbourSolver(BaseSolver):
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
-        
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
-    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type])
+    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type], num_starts=10)  # Giảm số điểm khởi đầu
     start_time = time.time()
     route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
     print(f"{solver.__class__.__name__} Solution: {route}")
