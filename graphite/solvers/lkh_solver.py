@@ -17,7 +17,7 @@ def two_opt(path, distances):
     best_distance = path_cost_from_distance_matrix(distances, path)
     present_route = path.copy()
 
-    for i in range(len(path) - 2):
+    for i in range(1, len(path) - 2):  # Bắt đầu từ 1 để bỏ qua node 0
         for j in range(i + 1, len(path) - 1):
             new_route = two_opt_change(present_route, i, j)
             new_distance = path_cost_from_distance_matrix(distances, new_route)
@@ -35,7 +35,7 @@ def simulated_annealing(tour, distances, initial_temp=1000, cooling_rate=0.003):
     best_cost = path_cost_from_distance_matrix(distances, current_solution)
 
     while current_temp > 1:
-        i, j = random.sample(range(1, len(tour)-1), 2)
+        i, j = random.sample(range(1, len(tour)-1), 2)  # Không chọn node 0
         new_solution = current_solution[:]
         new_solution[i], new_solution[j] = new_solution[j], new_solution[i]
 
@@ -72,6 +72,7 @@ class LKHGeneticSolver(BaseSolver):
         self.best_cost = float('inf')
         self.best_tour = None
         
+        # Tạo ra một quần thể ban đầu
         self.population = [(self.generate_initial_tour(), float('inf')) for _ in range(self.population_size)]
 
         for run in range(self.runs):
@@ -99,11 +100,13 @@ class LKHGeneticSolver(BaseSolver):
         return tour, self.calculate_cost(tour)
     
     def generate_initial_tour(self) -> List[int]:
-        nodes = list(range(1, self.n))  # Exclude node 0 from randomization
+        # Sinh ra một tour ngẫu nhiên bắt đầu và kết thúc tại node 0
+        nodes = list(range(1, self.n))  # Bỏ qua node 0
         random.shuffle(nodes)
-        return [0] + nodes + [0]  # Ensure tour starts and ends at node 0
+        return [0] + nodes + [0]  # Bắt đầu và kết thúc tại node 0
     
     def ensure_complete_tour(self, tour: List[int]) -> List[int]:
+        # Đảm bảo tour bắt đầu và kết thúc tại node 0
         if tour[0] != 0:
             tour = [0] + [node for node in tour if node != 0]
         if tour[-1] != 0:
@@ -133,12 +136,13 @@ class LKHGeneticSolver(BaseSolver):
 
             self.update_population(improved_tour, improved_cost)
 
-            # Apply mutation
+            # Áp dụng mutation
             self.mutate(improved_tour)
             improved_tour, improved_cost = simulated_annealing(improved_tour, self.distance_matrix)
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
-        start, end = sorted(random.sample(range(1, self.n-1), 2))
+        # Crossover giữa hai cha mẹ để sinh ra một đứa con
+        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Loại bỏ node đầu và cuối (0)
         child = [None] * self.n
         child[start:end + 1] = parent1[start:end + 1]
         current_position = end + 1
@@ -151,11 +155,13 @@ class LKHGeneticSolver(BaseSolver):
         return child
 
     def mutate(self, tour: List[int]):
+        # Mutation: hoán đổi hai node ngẫu nhiên, ngoại trừ node đầu và cuối (node 0)
         if self.n > 2:
-            i, j = random.sample(range(1, self.n - 1), 2)
+            i, j = random.sample(range(1, self.n - 1), 2)  # Tránh hoán đổi node đầu/cuối (node 0)
             tour[i], tour[j] = tour[j], tour[i]
 
     def update_population(self, tour: List[int], cost: float):
+        # Thêm tour mới vào quần thể hoặc thay thế tour tồi nhất nếu quần thể đã đầy
         if len(self.population) < self.max_population_size:
             self.population.append((tour, cost))
         else:
@@ -168,6 +174,7 @@ class LKHGeneticSolver(BaseSolver):
         return problem.edges
 
 if __name__ == "__main__":
+    # Chạy solver trên một bài toán MetricTSP thử nghiệm
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = LKHGeneticSolver(problem_types=[test_problem.problem_type])
