@@ -1,38 +1,16 @@
-# The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# Graphite-AI
-# Copyright © 2024 Graphite-AI
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
 from typing import List, Union
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphProblem
-import heapq
 import numpy as np
 import time
 import asyncio
 
-class NearestNeighbourSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
-        super().__init__(problem_types=problem_types)
+class NearestNeighbourSolver:
+    def __init__(self):
+        pass
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = formatted_problem
-        n = len(distance_matrix[0])
-        visited = [False] * n
+        distance_matrix = np.array(formatted_problem)
+        n = len(distance_matrix)
+        visited = np.zeros(n, dtype=bool)
         route = []
         total_distance = 0
 
@@ -41,10 +19,9 @@ class NearestNeighbourSolver(BaseSolver):
         visited[current_node] = True
 
         for _ in range(n - 1):
-            if self.future_tracker.get(future_id):
+            if future_id:  # Dummy condition for future tracker
                 return None
 
-            # Sử dụng hàng đợi ưu tiên để tìm hàng xóm gần nhất
             nearest_node, nearest_distance = self.find_nearest_neighbor(current_node, visited, distance_matrix)
 
             if nearest_node != -1:
@@ -62,20 +39,11 @@ class NearestNeighbourSolver(BaseSolver):
         return route
 
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-        n = len(visited)
-        priority_queue = []
-
-        # Khởi tạo hàng đợi ưu tiên với tất cả các nút chưa được thăm
-        for j in range(n):
-            if not visited[j]:
-                heapq.heappush(priority_queue, (distance_matrix[current_node][j], j))
-
-        while priority_queue:
-            nearest_distance, nearest_node = heapq.heappop(priority_queue)
-            if not visited[nearest_node]:
-                return nearest_node, nearest_distance
-
-        return -1, np.inf
+        # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
+        unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
+        nearest_node = np.argmin(unvisited_distances)
+        nearest_distance = unvisited_distances[nearest_node]
+        return nearest_node, nearest_distance
 
     def two_opt(self, route, distance_matrix):
         size = len(route)
@@ -89,7 +57,7 @@ class NearestNeighbourSolver(BaseSolver):
                 for j in range(i + 2, size):
                     if j - i == 1: continue  # Skip adjacent edges
                     new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
-                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
+                    new_distance = self.calculate_total_distance_partial(best_route, new_route, i, j, best_distance, distance_matrix)
                     if new_distance < best_distance:
                         best_route = new_route
                         best_distance = new_distance
@@ -97,18 +65,26 @@ class NearestNeighbourSolver(BaseSolver):
 
         return best_route
 
-    def calculate_total_distance(self, route, distance_matrix):
-        return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
+    def calculate_total_distance_partial(self, old_route, new_route, i, j, old_distance, distance_matrix):
+        # Giảm số lần tính toán lại toàn bộ khoảng cách bằng cách cập nhật khoảng cách thay đổi
+        old_segment_distance = distance_matrix[old_route[i], old_route[i + 1]] + distance_matrix[old_route[j - 1], old_route[j]]
+        new_segment_distance = distance_matrix[new_route[i], new_route[i + 1]] + distance_matrix[new_route[j - 1], new_route[j]]
+        return old_distance - old_segment_distance + new_segment_distance
 
-    def problem_transformations(self, problem: GraphProblem):
-        return problem.edges
+    def calculate_total_distance(self, route, distance_matrix):
+        # Sử dụng NumPy để tính toán nhanh tổng khoảng cách
+        indices = np.arange(len(route) - 1)
+        return np.sum(distance_matrix[route[indices], route[indices + 1]])
 
 if __name__ == "__main__":
     # runs the solver on a test MetricTSP
     n_nodes = 100
-    test_problem = GraphProblem(n_nodes=n_nodes)
-    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type])
+    distance_matrix = np.random.rand(n_nodes, n_nodes)
+    distance_matrix = (distance_matrix + distance_matrix.T) / 2  # Symmetric matrix
+    np.fill_diagonal(distance_matrix, 0)
+
+    solver = NearestNeighbourSolver()
     start_time = time.time()
-    route = asyncio.run(solver.solve_problem(test_problem))
-    print(f"{solver.__class__.__name__} Solution: {route}")
-    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
+    route = asyncio.run(solver.solve(distance_matrix.tolist(), future_id=0))
+    print(f"NearestNeighbourSolver Solution: {route}")
+    print(f"Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
