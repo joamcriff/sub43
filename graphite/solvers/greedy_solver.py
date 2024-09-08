@@ -73,27 +73,30 @@ class NearestNeighbourSolver(BaseSolver):
     def two_opt(self, route, distance_matrix):
         size = len(route)
         best_route = route[:]
+        distance_matrix = np.array(distance_matrix)  # Chuyển đổi thành mảng NumPy
         best_distance = self.calculate_total_distance(best_route, distance_matrix)
         improved = True
-
-        distance_matrix = np.array(distance_matrix)  # Convert to NumPy array
 
         while improved:
             improved = False
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
                     if j - i == 1:
-                        continue  # Skip adjacent edges
+                        continue  # Bỏ qua các cạnh kề
 
-                    # Calculate the delta distance of the swap
-                    old_distance = (distance_matrix[best_route[i], best_route[i + 1]] +
-                                    distance_matrix[best_route[j - 1], best_route[j]])
-                    new_distance = (distance_matrix[best_route[i], best_route[j - 1]] +
-                                    distance_matrix[best_route[i + 1], best_route[j]])
+                    # Chuyển đổi chỉ số thành số nguyên
+                    i1, i2 = int(best_route[i]), int(best_route[i + 1])
+                    j1, j2 = int(best_route[j - 1]), int(best_route[j])
+                    
+                    # Tính toán delta khoảng cách của việc hoán đổi
+                    old_distance = (distance_matrix[i1, i2] +
+                                    distance_matrix[j1, j2])
+                    new_distance = (distance_matrix[i1, j1] +
+                                    distance_matrix[i2, j2])
                     
                     delta = new_distance - old_distance
                     if delta < 0:
-                        # Apply the 2-opt move
+                        # Thực hiện hoán đổi 2-opt
                         best_route[i + 1:j] = reversed(best_route[i + 1:j])
                         best_distance += delta
                         improved = True
@@ -101,9 +104,8 @@ class NearestNeighbourSolver(BaseSolver):
         return best_route
 
     def calculate_total_distance(self, route, distance_matrix):
-        # Convert to NumPy array
-        distance_matrix = np.array(distance_matrix)
-        # Compute total distance using NumPy
+        distance_matrix = np.array(distance_matrix)  # Chuyển đổi thành mảng NumPy
+        route = np.array(route)  # Đảm bảo route là mảng NumPy
         indices = np.arange(len(route) - 1)
         total_distance = np.sum(distance_matrix[route[indices], route[indices + 1]])
         total_distance += distance_matrix[route[-1], route[0]]
