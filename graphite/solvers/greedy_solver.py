@@ -1,10 +1,9 @@
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 import numpy as np
-import random
 import time
 import asyncio
-import heapq  # Thư viện cho heap
+import random
 from typing import List, Union, Tuple
 
 class NearestNeighbourSolver(BaseSolver):
@@ -21,11 +20,12 @@ class NearestNeighbourSolver(BaseSolver):
 
         # Tìm kiếm nhiều hướng đồng thời
         start_nodes = random.sample(range(n), min(num_starts, n))  # Chọn num_starts điểm bắt đầu ngẫu nhiên
-        tasks = [self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in start_nodes]
-        results = await asyncio.gather(*tasks)
+        routes = await asyncio.gather(
+            *[self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in start_nodes]
+        )
 
         # Chọn đường đi tốt nhất
-        for route, total_distance in results:
+        for route, total_distance in routes:
             if total_distance < best_total_distance:
                 best_total_distance = total_distance
                 best_route = route
@@ -41,29 +41,26 @@ class NearestNeighbourSolver(BaseSolver):
         route.append(current_node)
         visited[current_node] = True
 
-        # Tạo danh sách điểm chưa thăm
-        remaining_nodes = [(distance_matrix[current_node][j], j) for j in range(n) if j != current_node]
-        heapq.heapify(remaining_nodes)
-
-        while remaining_nodes:
+        for _ in range(n - 1):
             if self.future_tracker.get(future_id):
                 return route, float('inf')
 
-            # Lấy điểm gần nhất
-            nearest_distance, nearest_node = heapq.heappop(remaining_nodes)
-            
-            if visited[nearest_node]:
-                continue
+            # Tìm điểm gần nhất chưa thăm
+            nearest_distance = np.inf
+            nearest_node = None
+            for j in range(n):
+                if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
+                    nearest_distance = distance_matrix[current_node][j]
+                    nearest_node = j
+
+            if nearest_node is None:
+                break
 
             # Di chuyển đến điểm gần nhất chưa thăm
             route.append(nearest_node)
             visited[nearest_node] = True
             total_distance += nearest_distance
             current_node = nearest_node
-
-            # Cập nhật các điểm chưa thăm
-            remaining_nodes = [(distance_matrix[current_node][j], j) for j in range(n) if not visited[j]]
-            heapq.heapify(remaining_nodes)
 
         # Trở về điểm xuất phát
         total_distance += distance_matrix[current_node][start_node]
