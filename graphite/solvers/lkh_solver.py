@@ -1,59 +1,10 @@
 import numpy as np
 import random
 import time
-import concurrent.futures
+import asyncio
 from typing import List, Tuple, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
-
-def path_cost_from_distance_matrix(distances, path):
-    return sum(distances[path[i], path[i+1]] for i in range(len(path)-1)) + distances[path[-1], path[0]]
-
-def two_opt_change(route, i, j):
-    new_route = route[:i] + route[i:j+1][::-1] + route[j+1:]
-    return new_route
-
-def two_opt(path, distances):
-    best_distance = path_cost_from_distance_matrix(distances, path)
-    present_route = path.copy()
-
-    for i in range(1, len(path) - 2):  # Bắt đầu từ 1 để bỏ qua node 0
-        for j in range(i + 1, len(path) - 1):
-            new_route = two_opt_change(present_route, i, j)
-            new_distance = path_cost_from_distance_matrix(distances, new_route)
-
-            if new_distance < best_distance:
-                present_route = new_route
-                best_distance = new_distance
-
-    return best_distance, present_route
-
-def simulated_annealing(tour, distances, initial_temp=1000, cooling_rate=0.003):
-    current_temp = initial_temp
-    current_solution = tour
-    best_solution = current_solution
-    best_cost = path_cost_from_distance_matrix(distances, current_solution)
-
-    while current_temp > 1:
-        i, j = random.sample(range(1, len(tour)-1), 2)  # Không chọn node 0
-        new_solution = current_solution[:]
-        new_solution[i], new_solution[j] = new_solution[j], new_solution[i]
-
-        current_cost = path_cost_from_distance_matrix(distances, current_solution)
-        new_cost = path_cost_from_distance_matrix(distances, new_solution)
-
-        if new_cost < current_cost or random.uniform(0, 1) < np.exp((current_cost - new_cost) / max(current_temp, 1e-10)):
-            current_solution = new_solution
-
-        if new_cost < best_cost:
-            best_solution = new_solution
-            best_cost = new_cost
-
-        # Giảm nhiệt độ với giới hạn tối thiểu để tránh tràn số
-        current_temp = max(current_temp * (1 - cooling_rate), 1e-10)
-
-    return best_solution, best_cost
-
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
@@ -66,7 +17,7 @@ class LKHGeneticSolver(BaseSolver):
         self.seed = seed
         random.seed(seed)
         np.random.seed(seed)
-
+    
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         self.distance_matrix = np.array(formatted_problem)
         self.n = len(formatted_problem)
@@ -74,7 +25,6 @@ class LKHGeneticSolver(BaseSolver):
         self.best_cost = float('inf')
         self.best_tour = None
         
-        # Tạo quần thể ban đầu
         self.population = [(self.generate_initial_tour(), float('inf')) for _ in range(self.population_size)]
 
         for run in range(self.runs):
@@ -86,30 +36,29 @@ class LKHGeneticSolver(BaseSolver):
             self.update_best_tour(*min(self.population, key=lambda x: x[1]))
             
             if time.time() - self.start_time >= self.total_time_limit:
-                print("*** Đã vượt quá thời gian quy định ***")
+                print("*** Time limit exceeded ***")
                 break
         
         return self.best_tour
 
     def evaluate_population(self):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.find_tour, tour) for tour, _ in self.population]
-            for i, future in enumerate(futures):
-                tour, cost = future.result()
-                self.population[i] = (tour, cost)
+        for i in range(len(self.population)):
+            tour, _ = self.find_tour(self.population[i][0])
+            cost = self.calculate_cost(tour)
+            self.population[i] = (tour, cost)
 
     def find_tour(self, tour: List[int]) -> Tuple[List[int], float]:
         tour = self.ensure_complete_tour(tour)
         return tour, self.calculate_cost(tour)
     
     def generate_initial_tour(self) -> List[int]:
-        # Sinh ra một tour ngẫu nhiên bắt đầu và kết thúc tại node 0
-        nodes = list(range(1, self.n))  # Bỏ qua node 0
+        # Generate a random tour that starts and ends at node 0
+        nodes = list(range(1, self.n))  # Exclude node 0 from randomization
         random.shuffle(nodes)
-        return [0] + nodes + [0]  # Bắt đầu và kết thúc tại node 0
+        return [0] + nodes + [0]  # Ensure tour starts and ends at node 0
     
     def ensure_complete_tour(self, tour: List[int]) -> List[int]:
-        # Đảm bảo tour bắt đầu và kết thúc tại node 0
+        # Ensure tour starts and ends at node 0
         if tour[0] != 0:
             tour = [0] + [node for node in tour if node != 0]
         if tour[-1] != 0:
@@ -128,24 +77,17 @@ class LKHGeneticSolver(BaseSolver):
         if len(self.population) >= 2:
             parent1, parent2 = random.sample(self.population, 2)
             child_tour = self.crossover(parent1[0], parent2[0])
-            child_tour = self.ensure_complete_tour(child_tour)
+            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after crossover
             child_cost = self.calculate_cost(child_tour)
-
-            # Áp dụng 2-opt để cải thiện lộ trình con
-            improved_cost, improved_tour = two_opt(child_tour, self.distance_matrix)
-
-            # Áp dụng simulated annealing sau khi crossover và mutation
-            improved_tour, improved_cost = simulated_annealing(improved_tour, self.distance_matrix)
-
-            self.update_population(improved_tour, improved_cost)
-
-            # Áp dụng mutation
-            self.mutate(improved_tour)
-            improved_tour, improved_cost = simulated_annealing(improved_tour, self.distance_matrix)
+            self.update_population(child_tour, child_cost)
+            
+            # Apply mutation
+            self.mutate(child_tour)
+            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after mutation
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
-        # Crossover giữa hai cha mẹ để sinh ra một đứa con
-        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Loại bỏ node đầu và cuối (0)
+        # Perform crossover between two parents to generate a child tour
+        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Exclude start and end nodes (0)
         child = [None] * self.n
         child[start:end + 1] = parent1[start:end + 1]
         current_position = end + 1
@@ -158,26 +100,30 @@ class LKHGeneticSolver(BaseSolver):
         return child
 
     def mutate(self, tour: List[int]):
-        # Mutation: hoán đổi hai node ngẫu nhiên, ngoại trừ node đầu và cuối (node 0)
+        # Apply a simple mutation: swap two random nodes, excluding start/end nodes
         if self.n > 2:
-            i, j = random.sample(range(1, self.n - 1), 2)  # Tránh hoán đổi node đầu/cuối (node 0)
+            i, j = random.sample(range(1, self.n - 1), 2)  # Avoid swapping the start/end nodes
             tour[i], tour[j] = tour[j], tour[i]
 
     def update_population(self, tour: List[int], cost: float):
-        # Thêm tour mới vào quần thể hoặc thay thế tour tồi nhất nếu quần thể đã đầy
+        # Add a new tour to the population or replace the worst tour if population is full
+        new_tour = self.generate_initial_tour()
+        new_tour = self.ensure_complete_tour(new_tour)
+        new_cost = self.calculate_cost(new_tour)
+        
         if len(self.population) < self.max_population_size:
-            self.population.append((tour, cost))
+            self.population.append((new_tour, new_cost))
         else:
             worst_tour = max(self.population, key=lambda t: t[1])
-            if cost < worst_tour[1]:
+            if new_cost < worst_tour[1]:
                 self.population.remove(worst_tour)
-                self.population.append((tour, cost))
+                self.population.append((new_tour, new_cost))
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
-        return problem.edges
+        return problem.edges  
 
 if __name__ == "__main__":
-    # Chạy solver trên một bài toán MetricTSP thử nghiệm
+    # Run the solver on a test MetricTSP
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = LKHGeneticSolver(problem_types=[test_problem.problem_type])

@@ -28,42 +28,42 @@ class BeamSearchSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphProblem]=[GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
 
-    async def solve(self, formatted_problem, future_id:int, beam_width:int=3)->List[int]:
+    async def solve(self, formatted_problem, future_id: int, beam_width: int = 3) -> List[int]:
         distance_matrix = formatted_problem
-        n = len(distance_matrix[0])
+        n = len(distance_matrix)
 
-        # Initialize the beam with the starting point (0) and a total distance of 0
-        beam = [(0, [0], 0)]
+        beam = [(0, [0], 0)]  # (current_node, path, current_distance)
         for _ in range(n - 1):
             if self.future_tracker.get(future_id):
                 return None
             candidates = []
 
-            # Expand each path in the beam
             for current_node, path, current_distance in beam:
                 for next_node in range(n):
                     if next_node not in path:
                         new_path = path + [next_node]
                         new_distance = current_distance + distance_matrix[current_node][next_node]
-                        candidates.append((next_node, new_path, new_distance))
+                        heuristic = heuristic_estimate(new_path, distance_matrix)
+                        candidates.append((new_distance + heuristic, next_node, new_path))
 
-            # Sort candidates by their current distance and select the top-k candidates (beam_width)
-            candidates.sort(key=lambda x: x[2])
-            beam = candidates[:min(beam_width, len(candidates))]
+            candidates = heapq.nsmallest(beam_width, candidates)
+            beam = [(dist, path[-1], path) for dist, _, path in candidates]
 
-        # Complete the tour by returning to the starting point (0)
         final_candidates = []
-        for current_node, path, current_distance in beam:
-            final_distance = current_distance + distance_matrix[current_node][0]
+        for _, path, current_distance in beam:
+            final_distance = current_distance + distance_matrix[path[-1]][0]
             final_candidates.append((path + [0], final_distance))
 
-        # Select the best tour from the final candidates
         best_path, best_distance = min(final_candidates, key=lambda x: x[1])
 
         return best_path
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
+    def heuristic_estimate(self, path, distance_matrix):
+        # Ví dụ đơn giản: Ước lượng khoảng cách còn lại dựa trên khoảng cách gần nhất từ nút cuối cùng
+        last_node = path[-1]
+        return min(distance_matrix[last_node][i] for i in range(len(distance_matrix)) if i not in path)
     
 if __name__=='__main__':
     # runs the solver on a test MetricTSP
