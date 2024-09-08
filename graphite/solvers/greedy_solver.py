@@ -71,7 +71,7 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]], max_iterations: int = 100, tolerance: float = 0.01) -> List[int]:
+    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]], max_iterations: int = 100, tolerance: float = 0.05) -> List[int]:
         """Thực hiện thuật toán 2-opt để tối ưu hóa tuyến đường."""
         def calculate_total_distance(route):
             return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
