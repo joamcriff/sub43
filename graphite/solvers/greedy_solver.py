@@ -53,7 +53,7 @@ class NearestNeighbourSolver(BaseSolver):
     def two_opt(self, route: List[int], distance_matrix: np.ndarray) -> List[int]:
         """ Apply 2-opt optimization to improve the route. """
         def calculate_total_distance(r: List[int]) -> float:
-            return np.sum(distance_matrix[r[:-1], r[1:]])
+            return sum(distance_matrix[r[i], r[i+1]] for i in range(len(r) - 1))
 
         best_route = route
         best_distance = calculate_total_distance(route)
@@ -73,6 +73,7 @@ class NearestNeighbourSolver(BaseSolver):
                         improved = True
 
         return best_route
+
 
 if __name__ == "__main__":
     # Runs the solver on a test MetricTSP
