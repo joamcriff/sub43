@@ -8,7 +8,7 @@ from graphite.protocol import GraphProblem
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
-                 population_size=20, max_population_size=50, runs=10, total_time_limit=3600, seed=1):
+                 population_size=10, max_population_size=50, runs=10, total_time_limit=3600, seed=1):
         super().__init__(problem_types=problem_types)
         self.population_size = population_size
         self.max_population_size = max_population_size
@@ -48,17 +48,17 @@ class LKHGeneticSolver(BaseSolver):
             self.population[i] = (tour, cost)
 
     def find_tour(self, tour: List[int]) -> Tuple[List[int], float]:
-        # Apply local search improvements like 2-opt or 3-opt here
         tour = self.ensure_complete_tour(tour)
         return tour, self.calculate_cost(tour)
     
     def generate_initial_tour(self) -> List[int]:
-        nodes = list(range(self.n))
+        # Generate a random tour that starts and ends at node 0
+        nodes = list(range(1, self.n))  # Exclude node 0 from randomization
         random.shuffle(nodes)
-        return nodes
+        return [0] + nodes + [0]  # Ensure tour starts and ends at node 0
     
     def ensure_complete_tour(self, tour: List[int]) -> List[int]:
-        # Ensure the tour includes all nodes and starts and ends at 0
+        # Ensure tour starts and ends at node 0
         if tour[0] != 0:
             tour = [0] + [node for node in tour if node != 0]
         if tour[-1] != 0:
@@ -66,7 +66,7 @@ class LKHGeneticSolver(BaseSolver):
         return tour
 
     def calculate_cost(self, tour: List[int]) -> float:
-        return sum(self.distance_matrix[tour[i], tour[i + 1]] for i in range(len(tour) - 1))
+        return np.sum(self.distance_matrix[tour[:-1], tour[1:]])
 
     def update_best_tour(self, tour: List[int], cost: float):
         if cost < self.best_cost:
@@ -77,16 +77,17 @@ class LKHGeneticSolver(BaseSolver):
         if len(self.population) >= 2:
             parent1, parent2 = random.sample(self.population, 2)
             child_tour = self.crossover(parent1[0], parent2[0])
-            child_tour = self.ensure_complete_tour(child_tour)
+            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after crossover
             child_cost = self.calculate_cost(child_tour)
             self.update_population(child_tour, child_cost)
             
             # Apply mutation
             self.mutate(child_tour)
+            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after mutation
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
-        # Improved Order Crossover (OX) implementation
-        start, end = sorted(random.sample(range(self.n), 2))
+        # Perform crossover between two parents to generate a child tour
+        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Exclude start and end nodes (0)
         child = [None] * self.n
         child[start:end + 1] = parent1[start:end + 1]
         current_position = end + 1
@@ -99,31 +100,24 @@ class LKHGeneticSolver(BaseSolver):
         return child
 
     def mutate(self, tour: List[int]):
-        # Apply 2-opt mutation
-        tour = self.two_opt(tour)
-    
-    def two_opt(self, tour: List[int]) -> List[int]:
-        best = tour
-        best_cost = self.calculate_cost(best)
-        for i in range(1, len(tour) - 1):
-            for j in range(i + 1, len(tour)):
-                if j - i == 1:
-                    continue
-                new_tour = best[:i] + best[i:j][::-1] + best[j:]
-                new_cost = self.calculate_cost(new_tour)
-                if new_cost < best_cost:
-                    best = new_tour
-                    best_cost = new_cost
-        return best
+        # Apply a simple mutation: swap two random nodes, excluding start/end nodes
+        if self.n > 2:
+            i, j = random.sample(range(1, self.n - 1), 2)  # Avoid swapping the start/end nodes
+            tour[i], tour[j] = tour[j], tour[i]
 
     def update_population(self, tour: List[int], cost: float):
+        # Add a new tour to the population or replace the worst tour if population is full
+        new_tour = self.generate_initial_tour()
+        new_tour = self.ensure_complete_tour(new_tour)
+        new_cost = self.calculate_cost(new_tour)
+        
         if len(self.population) < self.max_population_size:
-            self.population.append((tour, cost))
+            self.population.append((new_tour, new_cost))
         else:
             worst_tour = max(self.population, key=lambda t: t[1])
-            if cost < worst_tour[1]:
+            if new_cost < worst_tour[1]:
                 self.population.remove(worst_tour)
-                self.population.append((tour, cost))
+                self.population.append((new_tour, new_cost))
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges  

@@ -60,9 +60,18 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(is_valid_solution(self.metric_tsp, metric_solution),True)
         self.assertEqual(is_valid_solution(self.general_tsp, general_solution),False)
         self.assertEqual(is_valid_solution(self.large_tsp, large_solution),True)  
+
+    async def test_lkh_solver(self):
+        solver = LKHGeneticSolver()
+        metric_solution = await solver.solve_problem(self.metric_tsp)
+        general_solution = await solver.solve_problem(self.general_tsp)
+        large_solution = await solver.solve_problem(self.large_tsp)
+        self.assertEqual(is_valid_solution(self.metric_tsp, metric_solution),True)
+        self.assertEqual(is_valid_solution(self.general_tsp, general_solution),False)
+        self.assertEqual(is_valid_solution(self.large_tsp, large_solution),True)  
     async def test_solvers(self):
         # check to assert that heuristics are not better than exact solver
-        solvers = [DPSolver(), NearestNeighbourSolver(), BeamSearchSolver()]
+        solvers = [DPSolver(), NearestNeighbourSolver(), BeamSearchSolver(), LKHGeneticSolver()]
         metric_solutions = {solver.__class__.__name__: await solver.solve_problem(self.metric_tsp) for solver in solvers}
         metric_synapses = {solver_type: GraphSynapse(problem=self.metric_tsp, solution=solution) for solver_type, solution in metric_solutions.items()}
         general_solutions = {solver.__class__.__name__: await solver.solve_problem(self.general_tsp) for solver in solvers}
@@ -80,7 +89,7 @@ class TestSolvers(unittest.IsolatedAsyncioTestCase):
         large_scores = {solver_name: large_score_handler.get_score(synapse) for solver_name, synapse in large_synapses.items()}
 
         # For the metric and the general scoring, we want to assert 
-        for compared_solver in [BeamSearchSolver, NearestNeighbourSolver()]:
+        for compared_solver in [BeamSearchSolver, NearestNeighbourSolver(), LKHGeneticSolver()]:
             self.assertLessEqual(round(metric_scores[DPSolver.__name__],5), round(metric_scores[compared_solver.__name__],5))
             self.assertLessEqual(round(general_scores[DPSolver.__name__],5), round(general_scores[compared_solver.__name__],5))
             self.assertGreater(large_scores[DPSolver.__name__], large_scores[compared_solver.__name__])
