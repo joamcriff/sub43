@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import time
-import asyncio
+import concurrent.futures
 from typing import List, Tuple, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
@@ -49,7 +49,8 @@ def simulated_annealing(tour, distances, initial_temp=1000, cooling_rate=0.003):
             best_solution = new_solution
             best_cost = new_cost
 
-        current_temp *= 1 - cooling_rate
+        # Giảm nhiệt độ theo cách thích nghi
+        current_temp *= 1 - cooling_rate * (1 - new_cost / best_cost)
 
     return best_solution, best_cost
 
@@ -72,7 +73,7 @@ class LKHGeneticSolver(BaseSolver):
         self.best_cost = float('inf')
         self.best_tour = None
         
-        # Tạo ra một quần thể ban đầu
+        # Tạo quần thể ban đầu
         self.population = [(self.generate_initial_tour(), float('inf')) for _ in range(self.population_size)]
 
         for run in range(self.runs):
@@ -84,16 +85,17 @@ class LKHGeneticSolver(BaseSolver):
             self.update_best_tour(*min(self.population, key=lambda x: x[1]))
             
             if time.time() - self.start_time >= self.total_time_limit:
-                print("*** Time limit exceeded ***")
+                print("*** Đã vượt quá thời gian quy định ***")
                 break
         
         return self.best_tour
 
     def evaluate_population(self):
-        for i in range(len(self.population)):
-            tour, _ = self.find_tour(self.population[i][0])
-            cost = self.calculate_cost(tour)
-            self.population[i] = (tour, cost)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.find_tour, tour) for tour, _ in self.population]
+            for i, future in enumerate(futures):
+                tour, cost = future.result()
+                self.population[i] = (tour, cost)
 
     def find_tour(self, tour: List[int]) -> Tuple[List[int], float]:
         tour = self.ensure_complete_tour(tour)
