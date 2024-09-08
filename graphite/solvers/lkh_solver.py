@@ -8,7 +8,7 @@ from graphite.protocol import GraphProblem
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
-                 population_size=100, max_population_size=200, runs=50, total_time_limit=1800, seed=42):
+                 population_size=10, max_population_size=50, runs=50, total_time_limit=3600, seed=1):
         super().__init__(problem_types=problem_types)
         self.population_size = population_size
         self.max_population_size = max_population_size
@@ -85,16 +85,9 @@ class LKHGeneticSolver(BaseSolver):
             self.mutate(child_tour)
             child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after mutation
 
-  # Enhanced mutation strategy
-    def mutate(self, tour: List[int]):
-        # Apply inversion mutation for better exploration
-        if self.n > 2:
-            i, j = sorted(random.sample(range(1, self.n - 1), 2))  # Avoid start/end nodes
-            tour[i:j+1] = reversed(tour[i:j+1])
-
-    # Improved crossover using Order Crossover (OX)
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
-        start, end = sorted(random.sample(range(1, self.n - 1), 2))
+        # Perform crossover between two parents to generate a child tour
+        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Exclude start and end nodes (0)
         child = [None] * self.n
         child[start:end + 1] = parent1[start:end + 1]
         current_position = end + 1
@@ -106,6 +99,11 @@ class LKHGeneticSolver(BaseSolver):
                 current_position += 1
         return child
 
+    def mutate(self, tour: List[int]):
+        # Apply a simple mutation: swap two random nodes, excluding start/end nodes
+        if self.n > 2:
+            i, j = random.sample(range(1, self.n - 1), 2)  # Avoid swapping the start/end nodes
+            tour[i], tour[j] = tour[j], tour[i]
 
     def update_population(self, tour: List[int], cost: float):
         # Add a new tour to the population or replace the worst tour if population is full
