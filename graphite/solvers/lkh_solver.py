@@ -42,17 +42,18 @@ def simulated_annealing(tour, distances, initial_temp=1000, cooling_rate=0.003):
         current_cost = path_cost_from_distance_matrix(distances, current_solution)
         new_cost = path_cost_from_distance_matrix(distances, new_solution)
 
-        if new_cost < current_cost or random.uniform(0, 1) < np.exp((current_cost - new_cost) / current_temp):
+        if new_cost < current_cost or random.uniform(0, 1) < np.exp((current_cost - new_cost) / max(current_temp, 1e-10)):
             current_solution = new_solution
 
         if new_cost < best_cost:
             best_solution = new_solution
             best_cost = new_cost
 
-        # Giảm nhiệt độ theo cách thích nghi
-        current_temp *= 1 - cooling_rate * (1 - new_cost / best_cost)
+        # Giảm nhiệt độ với giới hạn tối thiểu để tránh tràn số
+        current_temp = max(current_temp * (1 - cooling_rate), 1e-10)
 
     return best_solution, best_cost
+
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
