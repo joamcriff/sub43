@@ -25,7 +25,6 @@ def two_opt(path, distances):
             new_distance = path_cost_from_distance_matrix(distances, new_route)
 
             if new_distance < best_distance:
-                print(new_distance)
                 present_route = new_route
                 best_distance = new_distance
 

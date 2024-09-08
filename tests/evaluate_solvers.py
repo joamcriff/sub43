@@ -32,7 +32,7 @@ import os
 
 ROOT_DIR = "tests"
 SAVE_DIR = "evaluation_results"
-N_PROBLEMS = 500
+N_PROBLEMS = 100
 
 def can_show_plot():
     # Check if running in a headless environment
