@@ -23,10 +23,21 @@ from graphite.protocol import GraphProblem
 from graphite.utils.graph_utils import timeout
 import asyncio
 import time
+import heapq
 
 class BeamSearchSolver(BaseSolver):
-    def __init__(self, problem_types:List[GraphProblem]=[GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
+
+    def heuristic_estimate(self, path, distance_matrix):
+        # Ước lượng khoảng cách còn lại dựa trên khoảng cách gần nhất từ nút cuối cùng
+        last_node = path[-1]
+        remaining_nodes = [i for i in range(len(distance_matrix)) if i not in path]
+        if not remaining_nodes:
+            return 0
+        # Tính khoảng cách gần nhất đến các nút còn lại
+        min_distance = min(distance_matrix[last_node][i] for i in remaining_nodes)
+        return min_distance
 
     async def solve(self, formatted_problem, future_id: int, beam_width: int = 3) -> List[int]:
         distance_matrix = formatted_problem
@@ -43,7 +54,7 @@ class BeamSearchSolver(BaseSolver):
                     if next_node not in path:
                         new_path = path + [next_node]
                         new_distance = current_distance + distance_matrix[current_node][next_node]
-                        heuristic = heuristic_estimate(new_path, distance_matrix)
+                        heuristic = self.heuristic_estimate(new_path, distance_matrix)
                         candidates.append((new_distance + heuristic, next_node, new_path))
 
             candidates = heapq.nsmallest(beam_width, candidates)
@@ -60,18 +71,14 @@ class BeamSearchSolver(BaseSolver):
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
-    def heuristic_estimate(self, path, distance_matrix):
-        # Ví dụ đơn giản: Ước lượng khoảng cách còn lại dựa trên khoảng cách gần nhất từ nút cuối cùng
-        last_node = path[-1]
-        return min(distance_matrix[last_node][i] for i in range(len(distance_matrix)) if i not in path)
-    
-if __name__=='__main__':
-    # runs the solver on a test MetricTSP
+
+if __name__ == '__main__':
+    # Run the solver on a test MetricTSP
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = BeamSearchSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()
-    route = asyncio.run(solver.solve_problem(test_problem))
+    route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
     print(f"{solver.__class__.__name__} Solution: {route}")
-    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    
+    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
+
