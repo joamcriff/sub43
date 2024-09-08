@@ -88,26 +88,14 @@ class NearestNeighbourSolver(BaseSolver):
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
                     if j - i == 1: continue  # Skip adjacent edges
-
-                    # Tính toán delta thay vì tính toàn bộ lại khoảng cách
-                    old_distance = (
-                        distance_matrix[best_route[i], best_route[i + 1]] +
-                        distance_matrix[best_route[j - 1], best_route[j]]
-                    )
-                    new_distance = (
-                        distance_matrix[best_route[i], best_route[j - 1]] +
-                        distance_matrix[best_route[i + 1], best_route[j]]
-                    )
-
-                    delta = new_distance - old_distance
-                    if delta < 0:  # Nếu cải thiện, đảo ngược đoạn giữa
-                        best_route[i + 1:j] = best_route[i + 1:j][::-1]
-                        best_distance += delta
+                    new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
+                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
+                    if new_distance < best_distance:
+                        best_route = new_route
+                        best_distance = new_distance
                         improved = True
 
         return best_route
-
-
 
     def calculate_total_distance(self, route, distance_matrix):
         return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
