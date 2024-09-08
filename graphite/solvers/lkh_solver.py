@@ -6,6 +6,31 @@ from typing import List, Tuple, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 
+def path_cost_from_distance_matrix(distances, path):
+    # Tính tổng chi phí của đường đi dựa trên ma trận khoảng cách
+    return sum(distances[path[i], path[i+1]] for i in range(len(path)-1)) + distances[path[-1], path[0]]
+
+def two_opt_change(route, i, j):
+    # Thực hiện thay đổi 2-opt bằng cách đảo ngược phần giữa của lộ trình
+    new_route = route[:i] + route[i:j+1][::-1] + route[j+1:]
+    return new_route
+
+def two_opt(path, distances):
+    best_distance = path_cost_from_distance_matrix(distances, path)
+    present_route = path.copy()
+
+    for i in range(len(path) - 2):
+        for j in range(i + 1, len(path) - 1):
+            new_route = two_opt_change(present_route, i, j)
+            new_distance = path_cost_from_distance_matrix(distances, new_route)
+
+            if new_distance < best_distance:
+                print(new_distance)
+                present_route = new_route
+                best_distance = new_distance
+
+    return best_distance, present_route
+
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
                  population_size=10, max_population_size=50, runs=10, total_time_limit=3600, seed=1):
@@ -52,13 +77,11 @@ class LKHGeneticSolver(BaseSolver):
         return tour, self.calculate_cost(tour)
     
     def generate_initial_tour(self) -> List[int]:
-        # Generate a random tour that starts and ends at node 0
-        nodes = list(range(1, self.n))  # Exclude node 0 from randomization
+        nodes = list(range(self.n))
         random.shuffle(nodes)
-        return [0] + nodes + [0]  # Ensure tour starts and ends at node 0
+        return nodes
     
     def ensure_complete_tour(self, tour: List[int]) -> List[int]:
-        # Ensure tour starts and ends at node 0
         if tour[0] != 0:
             tour = [0] + [node for node in tour if node != 0]
         if tour[-1] != 0:
@@ -77,17 +100,20 @@ class LKHGeneticSolver(BaseSolver):
         if len(self.population) >= 2:
             parent1, parent2 = random.sample(self.population, 2)
             child_tour = self.crossover(parent1[0], parent2[0])
-            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after crossover
+            child_tour = self.ensure_complete_tour(child_tour)
             child_cost = self.calculate_cost(child_tour)
-            self.update_population(child_tour, child_cost)
+            
+            # Áp dụng thuật toán 2-opt để cải thiện lộ trình con
+            improved_cost, improved_tour = two_opt(child_tour, self.distance_matrix)
+            
+            self.update_population(improved_tour, improved_cost)
             
             # Apply mutation
-            self.mutate(child_tour)
-            child_tour = self.ensure_complete_tour(child_tour)  # Ensure valid tour after mutation
+            self.mutate(improved_tour)
+            improved_cost, improved_tour = two_opt(improved_tour, self.distance_matrix)  # Tối ưu sau mutation
 
     def crossover(self, parent1: List[int], parent2: List[int]) -> List[int]:
-        # Perform crossover between two parents to generate a child tour
-        start, end = sorted(random.sample(range(1, self.n-1), 2))  # Exclude start and end nodes (0)
+        start, end = sorted(random.sample(range(self.n), 2))
         child = [None] * self.n
         child[start:end + 1] = parent1[start:end + 1]
         current_position = end + 1
@@ -100,13 +126,12 @@ class LKHGeneticSolver(BaseSolver):
         return child
 
     def mutate(self, tour: List[int]):
-        # Apply a simple mutation: swap two random nodes, excluding start/end nodes
+        # Apply a simple mutation: swap two random nodes
         if self.n > 2:
             i, j = random.sample(range(1, self.n - 1), 2)  # Avoid swapping the start/end nodes
             tour[i], tour[j] = tour[j], tour[i]
 
     def update_population(self, tour: List[int], cost: float):
-        # Add a new tour to the population or replace the worst tour if population is full
         new_tour = self.generate_initial_tour()
         new_tour = self.ensure_complete_tour(new_tour)
         new_cost = self.calculate_cost(new_tour)
