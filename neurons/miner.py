@@ -105,12 +105,12 @@ class Miner(BaseMinerNeuron):
             elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
                 # Solves the problem to optimality but is very computationally intensive
                 route = await self.solvers['medium'].solve_problem(synapse.problem)
-            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
+            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 1000:
                 # Solves the problem to optimality but is very computationally intensive
                 route = await self.solvers['large'].solve_problem(synapse.problem)
             else:
                 # Simple heuristic that does not guarantee optimality. 
-                route = await self.solvers['veryLarge'].solve_problem(synapse.problem)
+                route = await self.solvers['veryLarge1'].solve_problem(synapse.problem)
         else: 
             # Conditional assignment of problems to each solver
             if synapse.problem.n_nodes < 15:
@@ -119,7 +119,7 @@ class Miner(BaseMinerNeuron):
             elif synapse.problem.n_nodes > 14 and synapse.problem.n_nodes < 26:
                 # Solves the problem to optimality but is very computationally intensive
                 route = await self.solvers['medium1'].solve_problem(synapse.problem)
-            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 100:
+            elif synapse.problem.n_nodes > 25 and synapse.problem.n_nodes < 1000:
                 # Solves the problem to optimality but is very computationally intensive
                 route = await self.solvers['large1'].solve_problem(synapse.problem)
             else:

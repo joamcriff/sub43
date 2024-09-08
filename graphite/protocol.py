@@ -34,7 +34,7 @@ class IsAlive(bt.Synapse):
     )
 
 class GraphProblem(BaseModel):
-    problem_type: Literal['Metric TSP', 'General TSP'] = Field('General TSP', description="Problem Type")
+    problem_type: Literal['Metric TSP', 'General TSP'] = Field('Metric TSP', description="Problem Type")
     objective_function: str = Field('min', description="Objective Function")
     visit_all: bool = Field(True, description="Visit All Nodes")
     to_origin: bool = Field(True, description="Return to Origin")

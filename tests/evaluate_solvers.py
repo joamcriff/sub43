@@ -104,7 +104,7 @@ def main():
         os.makedirs(os.path.join(ROOT_DIR, SAVE_DIR))
 
     # Use MetricTSPGenerator to generate problems of various graph sizes
-    metric_problems, metric_sizes = GeneralTSPGenerator.generate_n_samples(N_PROBLEMS)
+    metric_problems, metric_sizes = MetricTSPGenerator.generate_n_samples(N_PROBLEMS)
     # NearestNeighbourSolver(),  HPNSolver()
     test_solvers = [BeamSearchSolver(), NearestNeighbourSolver(), LKHGeneticSolver()]
 
