@@ -30,9 +30,11 @@ class NearestNeighbourSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = formatted_problem
-        n = len(distance_matrix[0])
-        visited = [False] * n
+        # Chuyển đổi distance_matrix thành mảng NumPy
+        distance_matrix = np.array(formatted_problem)
+        n = distance_matrix.shape[0]
+        
+        visited = np.zeros(n, dtype=bool)
         route = []
         total_distance = 0
 
@@ -44,7 +46,6 @@ class NearestNeighbourSolver(BaseSolver):
             if self.future_tracker.get(future_id):
                 return None
 
-            # Sử dụng hàng đợi ưu tiên để tìm hàng xóm gần nhất
             nearest_node, nearest_distance = self.find_nearest_neighbor(current_node, visited, distance_matrix)
 
             if nearest_node != -1:
@@ -54,28 +55,20 @@ class NearestNeighbourSolver(BaseSolver):
                 current_node = nearest_node
 
         # Quay trở lại nút bắt đầu
-        total_distance += distance_matrix[current_node][route[0]]
+        total_distance += distance_matrix[current_node, route[0]]
         route.append(route[0])
 
         # Áp dụng thuật toán 2-opt để cải thiện giải pháp
         route = self.two_opt(route, distance_matrix)
         return route
 
+
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-        n = len(visited)
-        priority_queue = []
-
-        # Khởi tạo hàng đợi ưu tiên với tất cả các nút chưa được thăm
-        for j in range(n):
-            if not visited[j]:
-                heapq.heappush(priority_queue, (distance_matrix[current_node][j], j))
-
-        while priority_queue:
-            nearest_distance, nearest_node = heapq.heappop(priority_queue)
-            if not visited[nearest_node]:
-                return nearest_node, nearest_distance
-
-        return -1, np.inf
+        # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
+        unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
+        nearest_node = np.argmin(unvisited_distances)
+        nearest_distance = unvisited_distances[nearest_node]
+        return nearest_node, nearest_distance
 
     def two_opt(self, route, distance_matrix):
         size = len(route)
@@ -83,22 +76,38 @@ class NearestNeighbourSolver(BaseSolver):
         best_distance = self.calculate_total_distance(best_route, distance_matrix)
         improved = True
 
+        distance_matrix = np.array(distance_matrix)  # Convert to NumPy array
+
         while improved:
             improved = False
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
-                    if j - i == 1: continue  # Skip adjacent edges
-                    new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
-                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
-                    if new_distance < best_distance:
-                        best_route = new_route
-                        best_distance = new_distance
+                    if j - i == 1:
+                        continue  # Skip adjacent edges
+
+                    # Calculate the delta distance of the swap
+                    old_distance = (distance_matrix[best_route[i], best_route[i + 1]] +
+                                    distance_matrix[best_route[j - 1], best_route[j]])
+                    new_distance = (distance_matrix[best_route[i], best_route[j - 1]] +
+                                    distance_matrix[best_route[i + 1], best_route[j]])
+                    
+                    delta = new_distance - old_distance
+                    if delta < 0:
+                        # Apply the 2-opt move
+                        best_route[i + 1:j] = reversed(best_route[i + 1:j])
+                        best_distance += delta
                         improved = True
 
         return best_route
 
     def calculate_total_distance(self, route, distance_matrix):
-        return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
+        # Convert to NumPy array
+        distance_matrix = np.array(distance_matrix)
+        # Compute total distance using NumPy
+        indices = np.arange(len(route) - 1)
+        total_distance = np.sum(distance_matrix[route[indices], route[indices + 1]])
+        total_distance += distance_matrix[route[-1], route[0]]
+        return total_distance
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
