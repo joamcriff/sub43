@@ -60,13 +60,22 @@ class NearestNeighbourSolver(BaseSolver):
         # Áp dụng thuật toán 2-opt để cải thiện giải pháp
         route = self.two_opt(route, distance_matrix)
         return route
-    
+
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-        # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
-        unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
-        nearest_node = np.argmin(unvisited_distances)
-        nearest_distance = unvisited_distances[nearest_node]
-        return nearest_node, nearest_distance
+        n = len(visited)
+        priority_queue = []
+
+        # Khởi tạo hàng đợi ưu tiên với tất cả các nút chưa được thăm
+        for j in range(n):
+            if not visited[j]:
+                heapq.heappush(priority_queue, (distance_matrix[current_node][j], j))
+
+        while priority_queue:
+            nearest_distance, nearest_node = heapq.heappop(priority_queue)
+            if not visited[nearest_node]:
+                return nearest_node, nearest_distance
+
+        return -1, np.inf
 
     def two_opt(self, route, distance_matrix):
         size = len(route)
@@ -79,19 +88,29 @@ class NearestNeighbourSolver(BaseSolver):
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
                     if j - i == 1: continue  # Skip adjacent edges
-                    new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
-                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
-                    if new_distance < best_distance:
-                        best_route = new_route
-                        best_distance = new_distance
+
+                    # Tính toán delta thay vì tính toàn bộ lại khoảng cách
+                    old_distance = (
+                        distance_matrix[best_route[i], best_route[i + 1]] +
+                        distance_matrix[best_route[j - 1], best_route[j]]
+                    )
+                    new_distance = (
+                        distance_matrix[best_route[i], best_route[j - 1]] +
+                        distance_matrix[best_route[i + 1], best_route[j]]
+                    )
+
+                    delta = new_distance - old_distance
+                    if delta < 0:  # Nếu cải thiện, đảo ngược đoạn giữa
+                        best_route[i + 1:j] = best_route[i + 1:j][::-1]
+                        best_distance += delta
                         improved = True
 
+            # Thoát khi không còn cải thiện
         return best_route
 
+
     def calculate_total_distance(self, route, distance_matrix):
-        # Sử dụng NumPy để tính toán nhanh tổng khoảng cách
-        indices = np.arange(len(route) - 1)
-        return np.sum(distance_matrix[route[indices], route[indices + 1]])
+        return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
 
     def problem_transformations(self, problem: GraphProblem):
         return problem.edges
