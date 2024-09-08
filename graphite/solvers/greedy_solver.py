@@ -50,12 +50,19 @@ class NearestNeighbourSolver(BaseSolver):
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
-    def two_opt(self, route: List[int], distance_matrix: np.ndarray) -> List[int]:
-        """ Apply 2-opt optimization to improve the route. """
-        def calculate_total_distance(r: List[int]) -> float:
-            return sum(distance_matrix[r[i], r[i+1]] for i in range(len(r) - 1))
+    def calculate_total_distance(r: List[int]) -> float:
+        total_distance = 0
+        for i in range(len(r) - 1):
+            total_distance += distance_matrix[r[i], r[i+1]]
+        return total_distance
 
+    def two_opt(self, route: List[int], distance_matrix: np.ndarray) -> List[int]:
         best_route = route
+        def calculate_total_distance(r: List[int]) -> float:
+            total_distance = 0
+            for i in range(len(r) - 1):
+                total_distance += distance_matrix[r[i], r[i+1]]
+            return total_distance
         best_distance = calculate_total_distance(route)
         improved = True
 
@@ -73,6 +80,7 @@ class NearestNeighbourSolver(BaseSolver):
                         improved = True
 
         return best_route
+
 
 
 if __name__ == "__main__":
