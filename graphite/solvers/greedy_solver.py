@@ -71,20 +71,17 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]], max_iterations: int = 100, tolerance: float = 0.05) -> List[int]:
+    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
         """Thực hiện thuật toán 2-opt để tối ưu hóa tuyến đường."""
         def calculate_total_distance(route):
             return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
 
         n = len(route)
         best_distance = calculate_total_distance(route)
-        iteration_count = 0
         improved = True
 
-        while improved and iteration_count < max_iterations:
+        while improved:
             improved = False
-            iteration_count += 1
-
             for i in range(1, n - 2):
                 for j in range(i + 1, n - 1):
                     # Hoán đổi hai cạnh (i-1,i) và (j,j+1)
@@ -92,15 +89,9 @@ class NearestNeighbourSolver(BaseSolver):
                     new_distance = calculate_total_distance(new_route)
 
                     if new_distance < best_distance:
-                        improvement_ratio = (best_distance - new_distance) / best_distance
-
-                        if improvement_ratio < tolerance:
-                            return route  # Dừng sớm nếu cải thiện không đáng kể
-
                         route = new_route
                         best_distance = new_distance
                         improved = True
-                        break  # Chỉ áp dụng thay đổi đầu tiên tìm thấy để giảm số lần lặp
 
         return route
 
