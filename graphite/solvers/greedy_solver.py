@@ -30,9 +30,9 @@ class NearestNeighbourSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = np.array(formatted_problem)
-        n = len(distance_matrix)
-        visited = np.zeros(n, dtype=bool)
+        distance_matrix = formatted_problem
+        n = len(distance_matrix[0])
+        visited = [False] * n
         route = []
         total_distance = 0
 
@@ -41,9 +41,10 @@ class NearestNeighbourSolver(BaseSolver):
         visited[current_node] = True
 
         for _ in range(n - 1):
-            if future_id:  # Dummy condition for future tracker
+            if self.future_tracker.get(future_id):
                 return None
 
+            # Sử dụng hàng đợi ưu tiên để tìm hàng xóm gần nhất
             nearest_node, nearest_distance = self.find_nearest_neighbor(current_node, visited, distance_matrix)
 
             if nearest_node != -1:
@@ -59,13 +60,13 @@ class NearestNeighbourSolver(BaseSolver):
         # Áp dụng thuật toán 2-opt để cải thiện giải pháp
         route = self.two_opt(route, distance_matrix)
         return route
-
+    
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-            # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
-            unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
-            nearest_node = np.argmin(unvisited_distances)
-            nearest_distance = unvisited_distances[nearest_node]
-            return nearest_node, nearest_distance
+        # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
+        unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
+        nearest_node = np.argmin(unvisited_distances)
+        nearest_distance = unvisited_distances[nearest_node]
+        return nearest_node, nearest_distance
 
     def two_opt(self, route, distance_matrix):
         size = len(route)
@@ -77,21 +78,15 @@ class NearestNeighbourSolver(BaseSolver):
             improved = False
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
-                    if j - i == 1: continue
+                    if j - i == 1: continue  # Skip adjacent edges
                     new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
-                    new_distance = self.calculate_total_distance_partial(best_route, new_route, i, j, best_distance, distance_matrix)
+                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
                     if new_distance < best_distance:
                         best_route = new_route
                         best_distance = new_distance
                         improved = True
 
         return best_route
-
-    def calculate_total_distance_partial(self, old_route, new_route, i, j, old_distance, distance_matrix):
-        # Giảm số lần tính toán lại toàn bộ khoảng cách bằng cách cập nhật khoảng cách thay đổi
-        old_segment_distance = distance_matrix[old_route[i], old_route[i + 1]] + distance_matrix[old_route[j - 1], old_route[j]]
-        new_segment_distance = distance_matrix[new_route[i], new_route[i + 1]] + distance_matrix[new_route[j - 1], new_route[j]]
-        return old_distance - old_segment_distance + new_segment_distance
 
     def calculate_total_distance(self, route, distance_matrix):
         # Sử dụng NumPy để tính toán nhanh tổng khoảng cách
