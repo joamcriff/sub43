@@ -7,14 +7,14 @@ import random
 from typing import List, Union, Tuple
 
 class NearestNeighbourSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')], beam_width: int = 2):
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')], beam_width: int = 3):
         super().__init__(problem_types=problem_types)
         self.beam_width = beam_width  # Số lượng nhánh mở rộng tại mỗi bước
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
-        num_starts = max(10, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
+        num_starts = max(n//2, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
         best_total_distance = float('inf')
