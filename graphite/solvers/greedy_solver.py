@@ -91,12 +91,12 @@ class NearestNeighbourSolver(BaseSolver):
 
                     # Tính toán delta thay vì tính toàn bộ lại khoảng cách
                     old_distance = (
-                        distance_matrix[best_route[i], best_route[i + 1]] +
-                        distance_matrix[best_route[j - 1], best_route[j]]
+                        distance_matrix[best_route[i]][best_route[i + 1]] +
+                        distance_matrix[best_route[j - 1]][best_route[j]]
                     )
                     new_distance = (
-                        distance_matrix[best_route[i], best_route[j - 1]] +
-                        distance_matrix[best_route[i + 1], best_route[j]]
+                        distance_matrix[best_route[i]][best_route[j - 1]] +
+                        distance_matrix[best_route[i + 1]][best_route[j]]
                     )
 
                     delta = new_distance - old_distance
@@ -105,8 +105,8 @@ class NearestNeighbourSolver(BaseSolver):
                         best_distance += delta
                         improved = True
 
-            # Thoát khi không còn cải thiện
         return best_route
+
 
 
     def calculate_total_distance(self, route, distance_matrix):
