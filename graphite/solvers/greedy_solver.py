@@ -20,7 +20,7 @@ class NearestNeighbourSolver(BaseSolver):
 
         best_route = None
         best_distance = np.inf
-
+        start_nodes = random.sample(range(n), min(n, 10))
         # Khởi tạo từ nhiều điểm bắt đầu khác nhau
         for start_node in range(n):
             visited = [False] * n
