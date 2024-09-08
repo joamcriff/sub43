@@ -1,11 +1,33 @@
+# The MIT License (MIT)
+# Copyright © 2023 Yuma Rao
+# Graphite-AI
+# Copyright © 2024 Graphite-AI
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+# the Software.
+
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
 from typing import List, Union
+from graphite.solvers.base_solver import BaseSolver
+from graphite.protocol import GraphProblem
+import heapq
 import numpy as np
 import time
 import asyncio
 
-class NearestNeighbourSolver:
-    def __init__(self):
-        pass
+class NearestNeighbourSolver(BaseSolver):
+    def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
+        super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = np.array(formatted_problem)
@@ -39,11 +61,11 @@ class NearestNeighbourSolver:
         return route
 
     def find_nearest_neighbor(self, current_node, visited, distance_matrix):
-        # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
-        unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
-        nearest_node = np.argmin(unvisited_distances)
-        nearest_distance = unvisited_distances[nearest_node]
-        return nearest_node, nearest_distance
+            # Sử dụng vector hóa NumPy để tìm hàng xóm gần nhất
+            unvisited_distances = np.where(~visited, distance_matrix[current_node], np.inf)
+            nearest_node = np.argmin(unvisited_distances)
+            nearest_distance = unvisited_distances[nearest_node]
+            return nearest_node, nearest_distance
 
     def two_opt(self, route, distance_matrix):
         size = len(route)
@@ -55,7 +77,7 @@ class NearestNeighbourSolver:
             improved = False
             for i in range(1, size - 2):
                 for j in range(i + 2, size):
-                    if j - i == 1: continue  # Skip adjacent edges
+                    if j - i == 1: continue
                     new_route = best_route[:i + 1] + best_route[i + 1:j][::-1] + best_route[j:]
                     new_distance = self.calculate_total_distance_partial(best_route, new_route, i, j, best_distance, distance_matrix)
                     if new_distance < best_distance:
@@ -76,15 +98,15 @@ class NearestNeighbourSolver:
         indices = np.arange(len(route) - 1)
         return np.sum(distance_matrix[route[indices], route[indices + 1]])
 
+    def problem_transformations(self, problem: GraphProblem):
+        return problem.edges
+
 if __name__ == "__main__":
     # runs the solver on a test MetricTSP
     n_nodes = 100
-    distance_matrix = np.random.rand(n_nodes, n_nodes)
-    distance_matrix = (distance_matrix + distance_matrix.T) / 2  # Symmetric matrix
-    np.fill_diagonal(distance_matrix, 0)
-
-    solver = NearestNeighbourSolver()
+    test_problem = GraphProblem(n_nodes=n_nodes)
+    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()
-    route = asyncio.run(solver.solve(distance_matrix.tolist(), future_id=0))
-    print(f"NearestNeighbourSolver Solution: {route}")
-    print(f"Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
+    route = asyncio.run(solver.solve_problem(test_problem))
+    print(f"{solver.__class__.__name__} Solution: {route}")
+    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time() - start_time}")
