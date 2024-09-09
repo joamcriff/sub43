@@ -31,13 +31,6 @@ class NearestNeighbourSolver(BaseSolver):
                 best_route = route
 
         if best_route:
-            # Tính toán min_distance_threshold
-            max_distance = max(max(row) for row in distance_matrix)
-            min_distance_threshold = max_distance / 5 
-
-            # Cải thiện đường đi bằng cách chuyển các đoạn đường chéo thành các đoạn không chéo
-            best_route = improve_route(best_route, distance_matrix, min_distance_threshold)
-            
             # Đảm bảo rằng đường đi bao gồm tất cả các điểm và trở về điểm xuất phát
             if len(set(best_route)) == n and best_route[0] == best_route[-1]:
                 return best_route
@@ -84,45 +77,6 @@ class NearestNeighbourSolver(BaseSolver):
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
-
-def improve_route(route: List[int], distance_matrix: List[List[Union[int, float]]], min_distance_threshold: float) -> List[int]:
-    """Cải thiện đường đi bằng cách thay thế các đoạn đường chéo bằng các đoạn không chéo, chỉ xét các đoạn đường xa."""
-    n = len(route)
-    improved_route = route[:]
-    improved = True
-
-    while improved:
-        improved = False
-        # Xem xét từng cặp đoạn đường không liền kề
-        for i in range(1, n - 2):
-            for j in range(i + 2, n - (1 if i == 0 else 0)):
-                if distance_matrix[improved_route[i]][improved_route[i+1]] > min_distance_threshold and \
-                   distance_matrix[improved_route[j]][improved_route[(j+1) % len(improved_route)]] > min_distance_threshold:
-                    if can_be_improved(improved_route, i, j, distance_matrix):
-                        improved_route = apply_2opt(improved_route, i, j)
-                        improved = True
-                        break
-            if improved:
-                break
-
-    return improved_route
-
-def can_be_improved(route: List[int], i: int, j: int, distance_matrix: List[List[Union[int, float]]]) -> bool:
-    """Kiểm tra xem việc hoán đổi đoạn đường từ i đến j có làm giảm khoảng cách không."""
-    if j - i == 1:  # Không phải là đoạn chéo
-        return False
-
-    # Tính khoảng cách trước và sau khi hoán đổi
-    d1 = distance_matrix[route[i - 1]][route[i]] + distance_matrix[route[j]][route[(j + 1) % len(route)]]
-    d2 = distance_matrix[route[i - 1]][route[j]] + distance_matrix[route[i]][route[(j + 1) % len(route)]]
-
-    return d2 < d1
-
-def apply_2opt(route: List[int], i: int, j: int) -> List[int]:
-    """Hoán đổi đoạn đường từ i đến j."""
-    new_route = route[:]
-    new_route[i:j + 1] = reversed(new_route[i:j + 1])
-    return new_route
 
         
 if __name__ == "__main__":
