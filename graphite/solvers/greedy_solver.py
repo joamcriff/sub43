@@ -15,7 +15,7 @@ class NearestNeighbourSolver(BaseSolver):
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = np.array(formatted_problem)
         n = len(distance_matrix[0])
-        num_starts = max(n // 3, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
+        num_starts = 10  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
         best_total_distance = float('inf')
@@ -98,7 +98,7 @@ class NearestNeighbourSolver(BaseSolver):
 if __name__ == "__main__":
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
-    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type], max_2opt_iterations=2)
+    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type], max_2opt_iterations=10)
     start_time = time.time()
     route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
     print(f"{solver.__class__.__name__} Solution: {route}")
