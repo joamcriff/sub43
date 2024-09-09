@@ -33,6 +33,7 @@ class NearestNeighbourSolver(BaseSolver):
         # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
         if best_route:
             optimized_route = self.nearest_insertion(best_route, distance_matrix)
+            # Đảm bảo tuyến đường hoàn chỉnh và hợp lệ
             if len(optimized_route) == n + 1 and optimized_route[0] == optimized_route[-1]:
                 return optimized_route
             else:
@@ -107,8 +108,9 @@ class NearestNeighbourSolver(BaseSolver):
                 final_route.insert((pos + 1) % len(final_route), insert_node)
                 visited[insert_node] = True
 
-        # Thêm đường trở về điểm xuất phát
-        final_route.append(final_route[0])
+        # Đảm bảo đường trở về điểm xuất phát
+        if final_route[0] != final_route[-1]:
+            final_route.append(final_route[0])
 
         return final_route
 
