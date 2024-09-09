@@ -30,7 +30,10 @@ class NearestNeighbourSolver(BaseSolver):
                 best_total_distance = total_distance
                 best_route = route
 
-        return best_route
+        # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
+        optimized_route = self.nearest_insertion(distance_matrix)
+
+        return optimized_route
 
     async def find_route_from_start(self, distance_matrix: List[List[Union[int, float]]], start_node: int, n: int, future_id: int) -> Tuple[List[int], float]:
         visited = [False] * n
@@ -68,10 +71,47 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
+    def nearest_insertion(self, distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+        """Thực hiện thuật toán Nearest Insertion để tối ưu hóa tuyến đường."""
+        def calculate_total_distance(route):
+            return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
+
+        n = len(distance_matrix)
+        visited = [False] * n
+        route = []
+
+        # Chọn điểm khởi đầu
+        start_node = random.randint(0, n - 1)
+        route.append(start_node)
+        visited[start_node] = True
+
+        # Tiến hành thêm các đỉnh
+        while len(route) < n:
+            best_insertion = None
+            best_distance = float('inf')
+            for i in range(n):
+                if not visited[i]:
+                    # Tìm điểm tốt nhất để chèn vào route
+                    for j in range(len(route)):
+                        distance_if_inserted = (distance_matrix[route[j]][i] + distance_matrix[i][route[(j + 1) % len(route)]])
+                        if distance_if_inserted < best_distance:
+                            best_distance = distance_if_inserted
+                            best_insertion = (i, j)
+
+            # Thực hiện chèn điểm vào route
+            insert_node, pos = best_insertion
+            route.insert((pos + 1) % len(route), insert_node)
+            visited[insert_node] = True
+
+        # Thêm đường trở về điểm xuất phát
+        route.append(route[0])
+
+        return route
+
+    def problem_transformations(self, problem: GraphProblem):
         return problem.edges
 
-        
+
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
