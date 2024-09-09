@@ -12,7 +12,7 @@ class NearestNeighbourSolver(BaseSolver):
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
-        n = len(distance_matrix[0])
+        n = len(distance_matrix)
         num_starts = 10  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
@@ -31,9 +31,14 @@ class NearestNeighbourSolver(BaseSolver):
                 best_route = route
 
         # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
-        optimized_route = self.nearest_insertion(best_route, distance_matrix)
-
-        return optimized_route
+        if best_route:
+            optimized_route = self.nearest_insertion(best_route, distance_matrix)
+            if len(optimized_route) == n + 1 and optimized_route[0] == optimized_route[-1]:
+                return optimized_route
+            else:
+                raise ValueError("Optimized route has an invalid number of cities.")
+        else:
+            raise ValueError("No valid route found.")
 
     async def find_route_from_start(self, distance_matrix: List[List[Union[int, float]]], start_node: int, n: int, future_id: int) -> Tuple[List[int], float]:
         visited = [False] * n
@@ -117,6 +122,9 @@ if __name__ == "__main__":
     test_problem = GraphProblem(n_nodes=n_nodes)
     solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type])
     start_time = time.time()
-    route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
-    print(f"{solver.__class__.__name__} Solution: {route}")
+    try:
+        route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
+        print(f"{solver.__class__.__name__} Solution: {route}")
+    except ValueError as e:
+        print(f"Error: {e}")
     print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
