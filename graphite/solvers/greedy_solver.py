@@ -6,13 +6,46 @@ import asyncio
 import random
 from typing import List, Union, Tuple
 
+class LinKernighanSolver:
+    def __init__(self, distance_matrix: List[List[Union[int, float]]]):
+        self.distance_matrix = distance_matrix
+
+    def solve(self, route: List[int]) -> List[int]:
+        # Thực hiện thuật toán Lin-Kernighan để tối ưu hóa tuyến đường
+        # Đây là một phiên bản đơn giản và bạn có thể cần cài đặt thực tế cho thuật toán LK
+        return self.lin_kernighan(route)
+
+    def lin_kernighan(self, route: List[int]) -> List[int]:
+        # Giả định thực hiện thuật toán Lin-Kernighan (LK) trên tuyến đường
+        # Đây là một phiên bản đơn giản hóa. Để thực hiện thuật toán LK thực sự, cần mã phức tạp hơn.
+        # Để biết thêm chi tiết, bạn nên tham khảo tài liệu về LK.
+        best_route = route
+        best_distance = self.calculate_total_distance(route)
+        improved = True
+
+        while improved:
+            improved = False
+            for i in range(len(route) - 1):
+                for j in range(i + 2, len(route)):
+                    new_route = route[:i+1] + list(reversed(route[i+1:j+1])) + route[j+1:]
+                    new_distance = self.calculate_total_distance(new_route)
+                    if new_distance < best_distance:
+                        best_route = new_route
+                        best_distance = new_distance
+                        improved = True
+        
+        return best_route
+
+    def calculate_total_distance(self, route: List[int]) -> float:
+        return sum(self.distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
+
 class NearestNeighbourSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
-        n = len(distance_matrix)
+        n = len(distance_matrix[0])
         num_starts = 10  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
@@ -30,9 +63,10 @@ class NearestNeighbourSolver(BaseSolver):
                 best_total_distance = total_distance
                 best_route = route
 
-        # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
+        # Áp dụng thuật toán Lin-Kernighan để tối ưu hóa đường đi
         if best_route:
-            optimized_route = self.nearest_insertion(best_route, distance_matrix)
+            lk_solver = LinKernighanSolver(distance_matrix)
+            optimized_route = lk_solver.solve(best_route)
             # Đảm bảo tuyến đường hoàn chỉnh và hợp lệ
             if len(optimized_route) == n + 1 and optimized_route[0] == optimized_route[-1]:
                 return optimized_route
@@ -77,47 +111,10 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def nearest_insertion(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
-        """Thực hiện thuật toán Nearest Insertion để tối ưu hóa tuyến đường."""
-        n = len(distance_matrix)
-        visited = [False] * n
-        final_route = route[:]
-
-        # Đánh dấu các điểm đã có trong route
-        for node in final_route:
-            visited[node] = True
-
-        # Tiến hành thêm các đỉnh
-        while len(final_route) < n:
-            best_insertion = None
-            best_distance = float('inf')
-            for i in range(n):
-                if not visited[i]:
-                    # Tìm điểm tốt nhất để chèn vào route
-                    for j in range(len(final_route)):
-                        next_index = (j + 1) % len(final_route)
-                        distance_if_inserted = (distance_matrix[final_route[j]][i] + distance_matrix[i][final_route[next_index]]
-                                               - distance_matrix[final_route[j]][final_route[next_index]])
-                        if distance_if_inserted < best_distance:
-                            best_distance = distance_if_inserted
-                            best_insertion = (i, j)
-
-            # Thực hiện chèn điểm vào route
-            if best_insertion:
-                insert_node, pos = best_insertion
-                final_route.insert((pos + 1) % len(final_route), insert_node)
-                visited[insert_node] = True
-
-        # Đảm bảo đường trở về điểm xuất phát
-        if final_route[0] != final_route[-1]:
-            final_route.append(final_route[0])
-
-        return final_route
-
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
-
+        
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
