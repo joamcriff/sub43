@@ -13,12 +13,12 @@ class NearestNeighbourSolver(BaseSolver):
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         distance_matrix = formatted_problem
         n = len(distance_matrix[0])
-        num_starts = max(n // 3, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
+        num_starts = max(n//3, 1)  # Đảm bảo ít nhất 1 điểm bắt đầu
 
         best_route = None
         best_total_distance = float('inf')
 
-        # Tìm kiếm nhiều hướng đồng thời với num_starts
+        # Tìm kiếm nhiều hướng đồng thời
         start_nodes = random.sample(range(n), min(num_starts, n))  # Chọn num_starts điểm bắt đầu ngẫu nhiên
         routes = await asyncio.gather(
             *[self.find_route_from_start(distance_matrix, start_node, n, future_id) for start_node in start_nodes]
@@ -36,42 +36,48 @@ class NearestNeighbourSolver(BaseSolver):
         return optimized_route
 
     async def find_route_from_start(self, distance_matrix: List[List[Union[int, float]]], start_node: int, n: int, future_id: int) -> Tuple[List[int], float]:
-        """Tìm đường đi từ điểm bắt đầu bằng thuật toán Nearest Insertion."""
-        route = self.nearest_insertion(distance_matrix, n, start_node)
-        total_distance = self.calculate_total_distance(route, distance_matrix)
+        visited = [False] * n
+        route = []
+        total_distance = 0
+
+        current_node = start_node
+        route.append(current_node)
+        visited[current_node] = True
+
+        for _ in range(n - 1):
+            if self.future_tracker.get(future_id):
+                return route, float('inf')
+
+            # Tìm điểm gần nhất chưa thăm
+            nearest_distance = np.inf
+            nearest_node = None
+            for j in range(n):
+                if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
+                    nearest_distance = distance_matrix[current_node][j]
+                    nearest_node = j
+
+            if nearest_node is None:
+                break
+
+            # Di chuyển đến điểm gần nhất chưa thăm
+            route.append(nearest_node)
+            visited[nearest_node] = True
+            total_distance += nearest_distance
+            current_node = nearest_node
+
+        # Trở về điểm xuất phát
+        total_distance += distance_matrix[current_node][start_node]
+        route.append(start_node)
+
         return route, total_distance
-
-    def nearest_insertion(self, distance_matrix: List[List[Union[int, float]]], n: int, start_node: int) -> List[int]:
-        """Thuật toán Nearest Insertion để tìm một đường đi ban đầu."""
-        unvisited = set(range(n))
-        route = [start_node]
-        unvisited.remove(start_node)
-
-        # Tìm điểm gần nhất với điểm ban đầu
-        nearest_node = min(unvisited, key=lambda x: distance_matrix[start_node][x])
-        route.append(nearest_node)
-        unvisited.remove(nearest_node)
-
-        # Thêm dần các điểm vào tour sao cho điểm mới được thêm vào có khoảng cách nhỏ nhất
-        while unvisited:
-            # Chọn điểm chưa thăm gần nhất với bất kỳ điểm nào trong route
-            next_node = min(unvisited, key=lambda x: min(distance_matrix[x][r] for r in route))
-            # Chèn điểm mới vào vị trí tốt nhất trong tour
-            best_insertion = min(
-                range(1, len(route)),
-                key=lambda i: distance_matrix[route[i - 1]][next_node] + distance_matrix[next_node][route[i]] - distance_matrix[route[i - 1]][route[i]]
-            )
-            route.insert(best_insertion, next_node)
-            unvisited.remove(next_node)
-
-        # Trở về điểm ban đầu
-        route.append(route[0])
-        return route
 
     def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
         """Thực hiện thuật toán 2-opt để tối ưu hóa tuyến đường."""
+        def calculate_total_distance(route):
+            return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
+
         n = len(route)
-        best_distance = self.calculate_total_distance(route, distance_matrix)
+        best_distance = calculate_total_distance(route)
         improved = True
 
         while improved:
@@ -80,7 +86,7 @@ class NearestNeighbourSolver(BaseSolver):
                 for j in range(i + 1, n - 1):
                     # Hoán đổi hai cạnh (i-1,i) và (j,j+1)
                     new_route = route[:i] + route[i:j + 1][::-1] + route[j + 1:]
-                    new_distance = self.calculate_total_distance(new_route, distance_matrix)
+                    new_distance = calculate_total_distance(new_route)
 
                     if new_distance < best_distance:
                         route = new_route
@@ -88,10 +94,6 @@ class NearestNeighbourSolver(BaseSolver):
                         improved = True
 
         return route
-
-    def calculate_total_distance(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> float:
-        """Tính tổng khoảng cách của một route."""
-        return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
