@@ -6,7 +6,7 @@ from typing import List, Tuple, Union
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 
-class LKHGeneticSolver(BaseSolver):
+class LKHGeneticSolver(BaseSolver): 
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2)],
                  population_size=10, max_population_size=50, runs=50, total_time_limit=3600, seed=1):
         super().__init__(problem_types=problem_types)
