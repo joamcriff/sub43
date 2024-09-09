@@ -30,8 +30,8 @@ class NearestNeighbourSolver(BaseSolver):
                 best_total_distance = total_distance
                 best_route = route
 
-        # Áp dụng 2-opt để tối ưu hóa đường đi
-        optimized_route = self.two_opt(best_route, distance_matrix)
+        # Áp dụng 3-opt để tối ưu hóa đường đi
+        optimized_route = self.three_opt(best_route, distance_matrix)
 
         return optimized_route
 
@@ -71,27 +71,48 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def two_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
-        """Thực hiện thuật toán 2-opt để tối ưu hóa tuyến đường."""
+    def three_opt(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+        """Thực hiện thuật toán 3-opt để tối ưu hóa tuyến đường."""
         def calculate_total_distance(route):
             return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
 
+        def reverse_segment_if_better(route, i, j, k):
+            """Thử tất cả các hoán đổi 3 cạnh có thể và chọn cách tốt nhất."""
+            A, B, C = route[i - 1], route[i], route[j - 1], route[j], route[k - 1], route[k % len(route)]
+            d0 = distance_matrix[A][B] + distance_matrix[C][route[k - 1]] + distance_matrix[route[k - 1]][route[k % len(route)]]
+            d1 = distance_matrix[A][route[k - 1]] + distance_matrix[B][C] + distance_matrix[route[k - 1]][route[k % len(route)]]
+            d2 = distance_matrix[A][C] + distance_matrix[route[k - 1]][B] + distance_matrix[route[k - 1]][route[k % len(route)]]
+            d3 = distance_matrix[A][C] + distance_matrix[B][route[k - 1]] + distance_matrix[route[k - 1]][route[k % len(route)]]
+            d4 = distance_matrix[route[i - 1]][route[k - 1]] + distance_matrix[B][C] + distance_matrix[route[k - 1]][route[k % len(route)]]
+            d_min = min(d0, d1, d2, d3, d4)
+
+            if d_min == d0:
+                return route  # Không cần thay đổi
+            elif d_min == d1:
+                new_route = route[:i] + route[i:k][::-1] + route[k:]
+                return new_route
+            elif d_min == d2:
+                new_route = route[:i] + route[i:k] + route[j:i][::-1] + route[k:]
+                return new_route
+            elif d_min == d3:
+                new_route = route[:i] + route[i:k] + route[j + 1:i]
+                return new_route
+            else:
+                new_route = route[:i] + route[i:k] + route[j:]
+                return new_route
+
         n = len(route)
-        best_distance = calculate_total_distance(route)
         improved = True
 
         while improved:
             improved = False
             for i in range(1, n - 2):
-                for j in range(i + 1, n - 1):
-                    # Hoán đổi hai cạnh (i-1,i) và (j,j+1)
-                    new_route = route[:i] + route[i:j + 1][::-1] + route[j + 1:]
-                    new_distance = calculate_total_distance(new_route)
-
-                    if new_distance < best_distance:
-                        route = new_route
-                        best_distance = new_distance
-                        improved = True
+                for j in range(i + 2, n - 1):
+                    for k in range(j + 2, n + 1):
+                        new_route = reverse_segment_if_better(route, i, j, k)
+                        if new_route != route:
+                            route = new_route
+                            improved = True
 
         return route
 
