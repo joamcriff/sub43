@@ -76,45 +76,59 @@ class NearestNeighbourSolver(BaseSolver):
         def calculate_total_distance(route):
             return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
 
-        def reverse_segment_if_better(route, i, j, k):
-            """Thử tất cả các hoán đổi 3 cạnh có thể và chọn cách tốt nhất."""
-            A, B, C = route[i - 1], route[i], route[j - 1], route[j], route[k - 1], route[k % len(route)]
-            d0 = distance_matrix[A][B] + distance_matrix[C][route[k - 1]] + distance_matrix[route[k - 1]][route[k % len(route)]]
-            d1 = distance_matrix[A][route[k - 1]] + distance_matrix[B][C] + distance_matrix[route[k - 1]][route[k % len(route)]]
-            d2 = distance_matrix[A][C] + distance_matrix[route[k - 1]][B] + distance_matrix[route[k - 1]][route[k % len(route)]]
-            d3 = distance_matrix[A][C] + distance_matrix[B][route[k - 1]] + distance_matrix[route[k - 1]][route[k % len(route)]]
-            d4 = distance_matrix[route[i - 1]][route[k - 1]] + distance_matrix[B][C] + distance_matrix[route[k - 1]][route[k % len(route)]]
-            d_min = min(d0, d1, d2, d3, d4)
-
-            if d_min == d0:
-                return route  # Không cần thay đổi
-            elif d_min == d1:
-                new_route = route[:i] + route[i:k][::-1] + route[k:]
-                return new_route
-            elif d_min == d2:
-                new_route = route[:i] + route[i:k] + route[j:i][::-1] + route[k:]
-                return new_route
-            elif d_min == d3:
-                new_route = route[:i] + route[i:k] + route[j + 1:i]
-                return new_route
-            else:
-                new_route = route[:i] + route[i:k] + route[j:]
-                return new_route
-
         n = len(route)
+        best_distance = calculate_total_distance(route)
         improved = True
 
         while improved:
             improved = False
             for i in range(1, n - 2):
-                for j in range(i + 2, n - 1):
-                    for k in range(j + 2, n + 1):
-                        new_route = reverse_segment_if_better(route, i, j, k)
-                        if new_route != route:
+                for j in range(i + 1, n - 1):
+                    for k in range(j + 1, n):
+                        # Thử tất cả các hoán đổi có thể với 3-opt
+                        new_route = self.reverse_segment_if_better(route, i, j, k, distance_matrix)
+                        new_distance = calculate_total_distance(new_route)
+
+                        if new_distance < best_distance:
                             route = new_route
+                            best_distance = new_distance
                             improved = True
 
         return route
+
+    def reverse_segment_if_better(self, route: List[int], i: int, j: int, k: int, distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+        """Thử tất cả các hoán đổi 3 cạnh có thể và chọn cách tốt nhất."""
+        A, B, C, D, E, F = route[i - 1], route[i], route[j - 1], route[j], route[k - 1], route[k % len(route)]
+
+        # Tính toán khoảng cách hiện tại
+        d0 = (distance_matrix[A][B] + distance_matrix[C][D] + distance_matrix[E][F])
+        
+        # 7 hoán đổi khác nhau có thể cho 3-opt
+        d1 = (distance_matrix[A][C] + distance_matrix[B][D] + distance_matrix[E][F])
+        d2 = (distance_matrix[A][B] + distance_matrix[C][F] + distance_matrix[D][E])
+        d3 = (distance_matrix[A][D] + distance_matrix[E][B] + distance_matrix[C][F])
+        d4 = (distance_matrix[A][C] + distance_matrix[E][D] + distance_matrix[B][F])
+        d5 = (distance_matrix[A][E] + distance_matrix[B][C] + distance_matrix[D][F])
+        d6 = (distance_matrix[A][E] + distance_matrix[D][B] + distance_matrix[C][F])
+        
+        # Chọn hoán đổi có khoảng cách ngắn nhất
+        distances = [d0, d1, d2, d3, d4, d5, d6]
+        best_distance = min(distances)
+
+        if best_distance == d0:
+            return route  # Không thay đổi
+        elif best_distance == d1:
+            return route[:i] + route[i:j][::-1] + route[j:k][::-1] + route[k:]
+        elif best_distance == d2:
+            return route[:i] + route[i:k][::-1] + route[k:]
+        elif best_distance == d3:
+            return route[:i] + route[i:j] + route[j:k][::-1] + route[k:]
+        elif best_distance == d4:
+            return route[:i] + route[j:k] + route[i:j][::-1] + route[k:]
+        elif best_distance == d5:
+            return route[:i] + route[j:k][::-1] + route[i:j] + route[k:]
+        elif best_distance == d6:
+            return route[:i] + route[k-1:j-1:-1] + route[i:j] + route[k:]
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
