@@ -31,7 +31,7 @@ class NearestNeighbourSolver(BaseSolver):
                 best_route = route
 
         # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
-        optimized_route = self.nearest_insertion(distance_matrix)
+        optimized_route = self.nearest_insertion(best_route)
 
         return optimized_route
 
