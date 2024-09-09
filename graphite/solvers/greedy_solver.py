@@ -31,7 +31,7 @@ class NearestNeighbourSolver(BaseSolver):
                 best_route = route
 
         # Áp dụng thuật toán Nearest Insertion để tối ưu hóa đường đi
-        optimized_route = self.nearest_insertion(best_route)
+        optimized_route = self.nearest_insertion(best_route, distance_matrix)
 
         return optimized_route
 
@@ -71,44 +71,43 @@ class NearestNeighbourSolver(BaseSolver):
 
         return route, total_distance
 
-    def nearest_insertion(self, distance_matrix: List[List[Union[int, float]]]) -> List[int]:
+    def nearest_insertion(self, route: List[int], distance_matrix: List[List[Union[int, float]]]) -> List[int]:
         """Thực hiện thuật toán Nearest Insertion để tối ưu hóa tuyến đường."""
-        def calculate_total_distance(route):
-            return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1))
-
         n = len(distance_matrix)
         visited = [False] * n
-        route = []
+        final_route = route[:]
 
-        # Chọn điểm khởi đầu
-        start_node = random.randint(0, n - 1)
-        route.append(start_node)
-        visited[start_node] = True
+        # Đánh dấu các điểm đã có trong route
+        for node in final_route:
+            visited[node] = True
 
         # Tiến hành thêm các đỉnh
-        while len(route) < n:
+        while len(final_route) < n:
             best_insertion = None
             best_distance = float('inf')
             for i in range(n):
                 if not visited[i]:
                     # Tìm điểm tốt nhất để chèn vào route
-                    for j in range(len(route)):
-                        distance_if_inserted = (distance_matrix[route[j]][i] + distance_matrix[i][route[(j + 1) % len(route)]])
+                    for j in range(len(final_route)):
+                        next_index = (j + 1) % len(final_route)
+                        distance_if_inserted = (distance_matrix[final_route[j]][i] + distance_matrix[i][final_route[next_index]]
+                                               - distance_matrix[final_route[j]][final_route[next_index]])
                         if distance_if_inserted < best_distance:
                             best_distance = distance_if_inserted
                             best_insertion = (i, j)
 
             # Thực hiện chèn điểm vào route
-            insert_node, pos = best_insertion
-            route.insert((pos + 1) % len(route), insert_node)
-            visited[insert_node] = True
+            if best_insertion:
+                insert_node, pos = best_insertion
+                final_route.insert((pos + 1) % len(final_route), insert_node)
+                visited[insert_node] = True
 
         # Thêm đường trở về điểm xuất phát
-        route.append(route[0])
+        final_route.append(final_route[0])
 
-        return route
+        return final_route
 
-    def problem_transformations(self, problem: GraphProblem):
+    def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
 
