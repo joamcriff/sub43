@@ -33,7 +33,7 @@ class NearestNeighbourSolver(BaseSolver):
         if best_route:
             # Tính toán min_distance_threshold
             max_distance = max(max(row) for row in distance_matrix)
-            min_distance_threshold = max_distance / 3
+            min_distance_threshold = max_distance / 5 
 
             # Cải thiện đường đi bằng cách chuyển các đoạn đường chéo thành các đoạn không chéo
             best_route = improve_route(best_route, distance_matrix, min_distance_threshold)
