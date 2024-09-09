@@ -31,6 +31,9 @@ class NearestNeighbourSolver(BaseSolver):
                 best_route = route
 
         if best_route:
+            # Thực hiện tối ưu hóa bằng Simulated Annealing
+            best_route = self.simulated_annealing(distance_matrix, best_route)
+            
             # Đảm bảo rằng đường đi bao gồm tất cả các điểm và trở về điểm xuất phát
             if len(set(best_route)) == n and best_route[0] == best_route[-1]:
                 return best_route
@@ -78,7 +81,58 @@ class NearestNeighbourSolver(BaseSolver):
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
-        
+    def simulated_annealing(self, distance_matrix: List[List[Union[int, float]]], initial_route: List[int], initial_temp: float = 1000.0, cooling_rate: float = 0.995, min_temp: float = 1.0) -> List[int]:
+        """Thực hiện tối ưu hóa bằng Simulated Annealing."""
+        current_route = initial_route
+        current_distance = self.calculate_total_distance(distance_matrix, current_route)
+        best_route = current_route
+        best_distance = current_distance
+        temperature = initial_temp
+
+        while temperature > min_temp:
+            # Tạo biến thể ngẫu nhiên của đường đi hiện tại
+            new_route = self.swap_two_segments(current_route)
+            new_distance = self.calculate_total_distance(distance_matrix, new_route)
+
+            # Tính toán sự chấp nhận theo tiêu chí nhiệt độ
+            if self.acceptance_probability(current_distance, new_distance, temperature) > random.random():
+                current_route = new_route
+                current_distance = new_distance
+
+                # Cập nhật đường đi tốt nhất
+                if current_distance < best_distance:
+                    best_route = current_route
+                    best_distance = current_distance
+
+            # Giảm nhiệt độ
+            temperature *= cooling_rate
+
+        return best_route
+
+    def swap_two_segments(self, route: List[int]) -> List[int]:
+        """Tạo biến thể ngẫu nhiên bằng cách hoán đổi hai đoạn đường."""
+        new_route = route[:]
+        n = len(new_route)
+        idx1, idx2 = random.sample(range(1, n-1), 2)  # Tránh hoán đổi điểm bắt đầu và kết thúc
+        if idx1 > idx2:
+            idx1, idx2 = idx2, idx1
+        new_route[idx1:idx2] = reversed(new_route[idx1:idx2])
+        return new_route
+
+    def acceptance_probability(self, old_cost: float, new_cost: float, temperature: float) -> float:
+        """Tính toán xác suất chấp nhận dựa trên sự thay đổi chi phí và nhiệt độ."""
+        if new_cost < old_cost:
+            return 1.0
+        return np.exp((old_cost - new_cost) / temperature)
+
+    def calculate_total_distance(self, distance_matrix: List[List[Union[int, float]]], route: List[int]) -> float:
+        """Tính tổng khoảng cách của đường đi."""
+        total_distance = 0
+        for i in range(len(route) - 1):
+            total_distance += distance_matrix[route[i]][route[i + 1]]
+        return total_distance
+
+
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
