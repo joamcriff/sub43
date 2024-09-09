@@ -90,8 +90,8 @@ class NearestNeighbourSolver(BaseSolver):
         temperature = initial_temp
 
         while temperature > min_temp:
-            # Tạo biến thể ngẫu nhiên của đường đi hiện tại
-            new_route = self.swap_two_segments(current_route)
+            # Tạo biến thể ngẫu nhiên của đường đi
+            new_route = self.swap_two_points(current_route)
             new_distance = self.calculate_total_distance(distance_matrix, new_route)
 
             # Tính toán sự chấp nhận theo tiêu chí nhiệt độ
@@ -109,14 +109,12 @@ class NearestNeighbourSolver(BaseSolver):
 
         return best_route
 
-    def swap_two_segments(self, route: List[int]) -> List[int]:
-        """Tạo biến thể ngẫu nhiên bằng cách hoán đổi hai đoạn đường."""
+    def swap_two_points(self, route: List[int]) -> List[int]:
+        """Tạo biến thể ngẫu nhiên bằng cách hoán đổi hai điểm."""
         new_route = route[:]
         n = len(new_route)
         idx1, idx2 = random.sample(range(1, n-1), 2)  # Tránh hoán đổi điểm bắt đầu và kết thúc
-        if idx1 > idx2:
-            idx1, idx2 = idx2, idx1
-        new_route[idx1:idx2] = reversed(new_route[idx1:idx2])
+        new_route[idx1], new_route[idx2] = new_route[idx2], new_route[idx1]
         return new_route
 
     def acceptance_probability(self, old_cost: float, new_cost: float, temperature: float) -> float:
