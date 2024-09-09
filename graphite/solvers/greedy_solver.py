@@ -98,7 +98,7 @@ class NearestNeighbourSolver(BaseSolver):
 if __name__ == "__main__":
     n_nodes = 100
     test_problem = GraphProblem(n_nodes=n_nodes)
-    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type], max_2opt_iterations=50)
+    solver = NearestNeighbourSolver(problem_types=[test_problem.problem_type], max_2opt_iterations=2)
     start_time = time.time()
     route = asyncio.run(solver.solve(test_problem.edges, future_id=1))
     print(f"{solver.__class__.__name__} Solution: {route}")
