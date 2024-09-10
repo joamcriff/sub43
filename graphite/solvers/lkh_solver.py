@@ -5,28 +5,18 @@ import subprocess
 import asyncio
 import time
 import os
-from typing import List, Union
+from typing import List, Union, Tuple
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.lkh_path = os.path.abspath("/root/LKH-2.0.10/LKH")  # Đường dẫn đến tệp thực thi LKH mà bạn đã cài đặt
+        self.lkh_path = os.path.abspath("/root/LKH-2.0.10/LKH")  # Đường dẫn đến tệp thực thi LKH
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         # Chuyển đổi ma trận khoảng cách sang định dạng .tsp mà LKH yêu cầu
         distance_matrix = np.array(formatted_problem)
         n = len(distance_matrix)
 
-        # Tìm giá trị lớn nhất trong ma trận khoảng cách
-        max_value = np.max(distance_matrix)
-
-        # Chuẩn hóa ma trận nếu giá trị quá lớn
-        if max_value > 1e6:  # Giới hạn tùy chỉnh, bạn có thể điều chỉnh con số này
-            scale_factor = 1e6 / max_value
-            distance_matrix = (distance_matrix * scale_factor).astype(int)
-        else:
-            distance_matrix = distance_matrix.astype(int)  # Chuyển đổi về số nguyên nếu không cần chuẩn hóa
-        
         # Tạo file .tsp cho đầu vào
         tsp_file = "problem.tsp"
         with open(tsp_file, "w") as f:
@@ -43,7 +33,10 @@ class LKHGeneticSolver(BaseSolver):
             f.write("RUNS = 1\n")  # Thực hiện 1 lần chạy LKH
         
         # Chạy LKH solver thông qua dòng lệnh
-        subprocess.run([self.lkh_path, par_file], check=True)
+        result = subprocess.run([self.lkh_path, par_file], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            raise RuntimeError(f"LKH solver failed with exit code {result.returncode}")
 
         # Đọc file kết quả solution.tour
         tour_file = "solution.tour"
@@ -58,10 +51,16 @@ class LKHGeneticSolver(BaseSolver):
                     node = int(line.strip())
                     if node == -1:
                         break
-                    route.append(node - 1)  # LKH sử dụng chỉ số 1-based, cần chuyển về 0-based
+                    route.append(node - 1)  # Chuyển đổi chỉ số từ 1-based sang 0-based
+        
+        # Xóa các file tạm
+        os.remove(tsp_file)
+        os.remove(par_file)
+        os.remove(tour_file)
+
         return route
 
-    def problem_transformations(self, problem: GraphProblem):
+    def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
 # Đoạn mã kiểm tra
