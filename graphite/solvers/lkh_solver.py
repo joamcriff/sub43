@@ -17,6 +17,16 @@ class LKHGeneticSolver(BaseSolver):
         distance_matrix = np.array(formatted_problem)
         n = len(distance_matrix)
 
+        # Tìm giá trị lớn nhất trong ma trận khoảng cách
+        max_value = np.max(distance_matrix)
+
+        # Chuẩn hóa ma trận nếu giá trị quá lớn
+        if max_value > 1e6:  # Giới hạn tùy chỉnh, bạn có thể điều chỉnh con số này
+            scale_factor = 1e6 / max_value
+            distance_matrix = (distance_matrix * scale_factor).astype(int)
+        else:
+            distance_matrix = distance_matrix.astype(int)  # Chuyển đổi về số nguyên nếu không cần chuẩn hóa
+        
         # Tạo file .tsp cho đầu vào
         tsp_file = "problem.tsp"
         with open(tsp_file, "w") as f:
