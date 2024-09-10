@@ -34,6 +34,8 @@ class LKHGeneticSolver(BaseSolver):
         
         # Chạy LKH solver thông qua dòng lệnh
         result = subprocess.run([self.lkh_path, par_file], capture_output=True, text=True)
+        print(f"STDOUT:\n{result.stdout}")
+        print(f"STDERR:\n{result.stderr}")
 
         if result.returncode != 0:
             raise RuntimeError(f"LKH solver failed with exit code {result.returncode}")
