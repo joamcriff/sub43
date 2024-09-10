@@ -45,59 +45,33 @@ class NearestNeighbourSolver(BaseSolver):
             if self.future_tracker.get(future_id):
                 return route, float('inf')
 
-            # Tìm điểm gần nhất đến toàn bộ các điểm đã thăm
+            # Tìm điểm gần nhất chưa thăm
+            nearest_distance = np.inf
             nearest_node = None
-            min_total_increase = np.inf
             for j in range(n):
-                if not visited[j]:
-                    total_increase = self.calculate_total_increase(route, j, distance_matrix)
-                    if total_increase < min_total_increase:
-                        min_total_increase = total_increase
-                        nearest_node = j
+                if not visited[j] and distance_matrix[current_node][j] < nearest_distance:
+                    nearest_distance = distance_matrix[current_node][j]
+                    nearest_node = j
 
             if nearest_node is None:
                 break
 
-            # Chèn điểm gần nhất vào vị trí tốt nhất trong lộ trình
-            best_insertion_index = self.find_best_insertion(route, nearest_node, distance_matrix)
-            route.insert(best_insertion_index, nearest_node)
+            # Di chuyển đến điểm gần nhất chưa thăm
+            route.append(nearest_node)
             visited[nearest_node] = True
-            total_distance += min_total_increase
+            total_distance += nearest_distance
+            current_node = nearest_node
 
-        # Trở về điểm xuất phát nếu chưa có
-        if route[-1] != start_node:
-            total_distance += distance_matrix[route[-1]][start_node]
-            route.append(start_node)
+        # Trở về điểm xuất phát
+        total_distance += distance_matrix[current_node][start_node]
+        route.append(start_node)
 
         return route, total_distance
-
-    def calculate_total_increase(self, route: List[int], new_node: int, distance_matrix: List[List[Union[int, float]]]) -> float:
-        """Tính toán tổng mức tăng khoảng cách khi thêm new_node vào lộ trình."""
-        min_increase = np.inf
-        for i in range(1, len(route)):
-            increase = (distance_matrix[route[i - 1]][new_node] +
-                        distance_matrix[new_node][route[i]] -
-                        distance_matrix[route[i - 1]][route[i]])
-            if increase < min_increase:
-                min_increase = increase
-        return min_increase
-
-    def find_best_insertion(self, route: List[int], new_node: int, distance_matrix: List[List[Union[int, float]]]) -> int:
-        """Tìm vị trí tốt nhất để chèn new_node vào lộ trình."""
-        best_index = 0
-        min_increase = np.inf
-        for i in range(1, len(route)):
-            increase = (distance_matrix[route[i - 1]][new_node] +
-                        distance_matrix[new_node][route[i]] -
-                        distance_matrix[route[i - 1]][route[i]])
-            if increase < min_increase:
-                min_increase = increase
-                best_index = i
-        return best_index
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
         return problem.edges
 
+        
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
