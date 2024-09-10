@@ -1,40 +1,58 @@
-from pyconcorde.tsp import TSPSolver
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphProblem
 import numpy as np
-import time
-import asyncio
+import subprocess
+import os
 from typing import List, Union
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
+        self.lkh_path = os.path.abspath("path/to/LKH")  # Đường dẫn đến tệp thực thi LKH mà bạn đã cài đặt
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
-        distance_matrix = formatted_problem
-        n = len(distance_matrix[0])
-        
-        # Flatten the distance matrix for Concorde input
-        flattened_distances = []
-        for i in range(n):
-            for j in range(i + 1, n):  # Only upper triangle is needed for undirected graphs
-                flattened_distances.append(distance_matrix[i][j])
-        
-        # Khởi tạo solver Concorde với dữ liệu khoảng cách
-        solver = TSPSolver.from_data(range(n), norm="GEO", dist=flattened_distances)
-        
-        # Giải quyết bài toán TSP
-        solution = solver.solve()
+        # Chuyển đổi ma trận khoảng cách sang định dạng .tsp mà LKH yêu cầu
+        distance_matrix = np.array(formatted_problem)
+        n = len(distance_matrix)
 
-        # Trả về lộ trình tối ưu với vòng khép kín (quay lại điểm xuất phát)
-        optimal_route = solution.tour
-        optimal_route.append(optimal_route[0])  # Thêm điểm khởi đầu vào cuối
+        # Tạo file .tsp cho đầu vào
+        tsp_file = "problem.tsp"
+        with open(tsp_file, "w") as f:
+            f.write(f"NAME: tsp_problem\nTYPE: TSP\nDIMENSION: {n}\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n")
+            for row in distance_matrix:
+                f.write(" ".join(map(str, row)) + "\n")
+            f.write("EOF\n")
+        
+        # Tạo file .par (parameter file) cho LKH
+        par_file = "problem.par"
+        with open(par_file, "w") as f:
+            f.write(f"PROBLEM_FILE = {tsp_file}\n")
+            f.write("OUTPUT_TOUR_FILE = solution.tour\n")
+            f.write("RUNS = 1\n")  # Thực hiện 1 lần chạy LKH
+        
+        # Chạy LKH solver thông qua dòng lệnh
+        subprocess.run([self.lkh_path, par_file], check=True)
 
-        return optimal_route
+        # Đọc file kết quả solution.tour
+        tour_file = "solution.tour"
+        route = []
+        with open(tour_file, "r") as f:
+            reading_tour = False
+            for line in f:
+                if "TOUR_SECTION" in line:
+                    reading_tour = True
+                    continue
+                if reading_tour:
+                    node = int(line.strip())
+                    if node == -1:
+                        break
+                    route.append(node - 1)  # LKH sử dụng chỉ số 1-based, cần chuyển về 0-based
+        return route
 
-    def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
+    def problem_transformations(self, problem: GraphProblem):
         return problem.edges
 
+# Đoạn mã kiểm tra
 if __name__ == "__main__":
     # Chạy solver trên bài toán MetricTSP thử nghiệm
     n_nodes = 100
