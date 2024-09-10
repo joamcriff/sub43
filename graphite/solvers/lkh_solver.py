@@ -10,7 +10,7 @@ from typing import List, Union
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.lkh_path = os.path.abspath("/root/LKH-2.0.10")  # Đường dẫn đến tệp thực thi LKH mà bạn đã cài đặt
+        self.lkh_path = os.path.abspath("/root/LKH-2.0.10/LKH")  # Đường dẫn đến tệp thực thi LKH mà bạn đã cài đặt
 
     async def solve(self, formatted_problem: List[List[Union[int, float]]], future_id: int) -> List[int]:
         # Chuyển đổi ma trận khoảng cách sang định dạng .tsp mà LKH yêu cầu
