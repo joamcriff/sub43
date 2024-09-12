@@ -106,7 +106,7 @@ def main():
     # Use MetricTSPGenerator to generate problems of various graph sizes
     metric_problems, metric_sizes = GeneralTSPGenerator.generate_n_samples(N_PROBLEMS)
     # NearestNeighbourSolver(),  HPNSolver(), LKHGeneticSolver()
-    test_solvers = [NearestNeighbourSolver()]
+    test_solvers = [LKHGeneticSolver(), NearestNeighbourSolver()]
 
     run_times_dict, scores_dict = compare_problems(test_solvers, metric_problems)
 
