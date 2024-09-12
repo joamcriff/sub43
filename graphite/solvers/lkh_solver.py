@@ -97,8 +97,14 @@ class LKHGeneticSolver(BaseSolver):
         with open(par_file, "w") as f:
             f.write(f"PROBLEM_FILE = {tsp_file}\n")
             f.write("OUTPUT_TOUR_FILE = solution.tour\n")
-            f.write("RUNS = 1\n")
+            f.write("RUNS = 10\n")  # Thực hiện nhiều lần chạy để cải thiện chất lượng giải pháp
+            f.write("LOCAL_SEARCH = 3\n")  # Sử dụng tìm kiếm cục bộ 3-opt
+            f.write("PATCHING_C = 0.5\n")  # Kích thước của các patching phases
+            f.write("PATCHING_A = 0.2\n")  # Điều chỉnh kích thước của các patching phases
+            f.write("OPTIMALITY = 1\n")  # Đảm bảo tính chính xác cao hơn
+            f.write("PRECISION = 1e-6\n")  # Độ chính xác của các số thực
             f.write(f"INITIAL_TOUR_FILE = initial_solution.tour\n")
+
 
         # Tạo file .tour chứa giải pháp khởi tạo từ NN
         init_tour_file = "initial_solution.tour"
