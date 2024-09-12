@@ -74,10 +74,6 @@ class LKHGeneticSolver(BaseSolver):
             total_distance += nearest_distance
             current_node = nearest_node
 
-        # Trở về điểm xuất phát
-        total_distance += distance_matrix[current_node][start_node]
-        route.append(start_node)
-
         return route, total_distance
 
     async def solve_with_lkh(self, formatted_problem: List[List[Union[int, float]]], future_id: int, initial_route: List[int]) -> List[int]:
@@ -110,7 +106,7 @@ class LKHGeneticSolver(BaseSolver):
             init_f.write("TOUR_SECTION\n")
             for node in initial_route:
                 init_f.write(f"{node + 1}\n")  # Chuyển đổi từ chỉ số 0-based sang 1-based
-            init_f.write("-1\n")
+            init_f.write("-1\n")  # Kết thúc danh sách điểm tour
 
         # Chạy LKH solver thông qua dòng lệnh
         result = subprocess.run([self.lkh_path, par_file], capture_output=True, text=True)
@@ -133,10 +129,6 @@ class LKHGeneticSolver(BaseSolver):
                         break
                     route.append(node - 1)  # Chuyển đổi chỉ số từ 1-based sang 0-based
 
-        # Đảm bảo chu trình khép kín bằng cách thêm lại node đầu tiên vào cuối
-        if route[0] != route[-1]:
-            route.append(route[0])
-        
         # Xóa các file tạm
         os.remove(tsp_file)
         os.remove(par_file)
