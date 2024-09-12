@@ -81,12 +81,25 @@ class LKHGeneticSolver(BaseSolver):
         return route, total_distance
 
     async def solve_with_lkh(self, formatted_problem: List[List[Union[int, float]]], future_id: int, initial_route: List[int]) -> List[int]:
-        n = len(initial_route)
+        n = len(formatted_problem)
+
+        # Tạo file .tsp cho LKH
+        tsp_file = "problem.tsp"
+        with open(tsp_file, "w") as f:
+            f.write(f"NAME: tsp_problem\n")
+            f.write(f"TYPE: TSP\n")
+            f.write(f"DIMENSION: {n}\n")
+            f.write(f"EDGE_WEIGHT_TYPE: EXPLICIT\n")
+            f.write(f"EDGE_WEIGHT_FORMAT: FULL_MATRIX\n")
+            f.write(f"EDGE_WEIGHT_SECTION\n")
+            for row in formatted_problem:
+                f.write(" ".join(map(str, row)) + "\n")
+            f.write("EOF\n")
 
         # Tạo file .par (parameter file) cho LKH
         par_file = "problem.par"
         with open(par_file, "w") as f:
-            f.write(f"PROBLEM_FILE = problem.tsp\n")
+            f.write(f"PROBLEM_FILE = {tsp_file}\n")
             f.write("OUTPUT_TOUR_FILE = solution.tour\n")
             f.write("RUNS = 1\n")
             f.write(f"INITIAL_TOUR_FILE = initial_solution.tour\n")
@@ -98,14 +111,6 @@ class LKHGeneticSolver(BaseSolver):
             for node in initial_route:
                 init_f.write(f"{node + 1}\n")  # Chuyển đổi từ chỉ số 0-based sang 1-based
             init_f.write("-1\n")
-
-        # Nếu cần, tạo file .tsp dựa trên ma trận khoảng cách
-        tsp_file = "problem.tsp"
-        with open(tsp_file, "w") as f:
-            f.write(f"NAME: tsp_problem\nTYPE: TSP\nDIMENSION: {n}\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n")
-            for row in formatted_problem:
-                f.write(" ".join(map(str, row)) + "\n")
-            f.write("EOF\n")
 
         # Chạy LKH solver thông qua dòng lệnh
         result = subprocess.run([self.lkh_path, par_file], capture_output=True, text=True)
