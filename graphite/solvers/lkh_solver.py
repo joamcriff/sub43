@@ -6,7 +6,6 @@ import asyncio
 import time
 import os
 from typing import List, Union, Tuple
-import io
 
 class LKHGeneticSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphProblem] = [GraphProblem(n_nodes=2), GraphProblem(n_nodes=2, directed=True, problem_type='General TSP')]):
@@ -18,45 +17,51 @@ class LKHGeneticSolver(BaseSolver):
         distance_matrix = np.array(formatted_problem)
         n = len(distance_matrix)
 
-        # Tạo file .tsp trong bộ nhớ tạm (in-memory)
-        tsp_file = io.StringIO()
-        tsp_file.write(f"NAME: tsp_problem\nTYPE: TSP\nDIMENSION: {n}\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n")
-        for row in distance_matrix:
-            tsp_file.write(" ".join(map(str, row)) + "\n")
-        tsp_file.write("EOF\n")
-        tsp_file.seek(0)  # Đặt con trỏ về đầu file
-
+        # Tạo file .tsp cho đầu vào
+        tsp_file = "problem.tsp"
+        with open(tsp_file, "w") as f:
+            f.write(f"NAME: tsp_problem\nTYPE: TSP\nDIMENSION: {n}\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n")
+            for row in distance_matrix:
+                f.write(" ".join(map(str, row)) + "\n")
+            f.write("EOF\n")
+        
         # Tạo file .par (parameter file) cho LKH
-        par_file = io.StringIO()
-        par_file.write("PROBLEM_FILE = problem.tsp\n")
-        par_file.write("OUTPUT_TOUR_FILE = solution.tour\n")
-        par_file.write("RUNS = 3\n")  # Tăng số lần chạy để tăng chất lượng
-        par_file.seek(0)  # Đặt con trỏ về đầu file
-
+        par_file = "problem.par"
+        with open(par_file, "w") as f:
+            f.write(f"PROBLEM_FILE = {tsp_file}\n")
+            f.write("OUTPUT_TOUR_FILE = solution.tour\n")
+            f.write("RUNS = 5\n")  # Thực hiện 1 lần chạy LKH
+        
         # Chạy LKH solver thông qua dòng lệnh
         result = subprocess.run([self.lkh_path, par_file], capture_output=True, text=True)
 
         if result.returncode != 0:
             raise RuntimeError(f"LKH solver failed with exit code {result.returncode}")
 
-        # Đọc file kết quả solution.tour trong bộ nhớ
-        tour_file = io.StringIO(result.stdout)  # Giả sử output từ LKH được chuyển trực tiếp ra stdout
+        # Đọc file kết quả solution.tour
+        tour_file = "solution.tour"
         route = []
-        reading_tour = False
-        for line in tour_file:
-            if "TOUR_SECTION" in line:
-                reading_tour = True
-                continue
-            if reading_tour:
-                node = int(line.strip())
-                if node == -1:
-                    break
-                route.append(node - 1)  # Chuyển đổi chỉ số từ 1-based sang 0-based
+        with open(tour_file, "r") as f:
+            reading_tour = False
+            for line in f:
+                if "TOUR_SECTION" in line:
+                    reading_tour = True
+                    continue
+                if reading_tour:
+                    node = int(line.strip())
+                    if node == -1:
+                        break
+                    route.append(node - 1)  # Chuyển đổi chỉ số từ 1-based sang 0-based
 
         # Đảm bảo chu trình khép kín bằng cách thêm lại node đầu tiên vào cuối
         if route[0] != route[-1]:
             route.append(route[0])
         
+        # Xóa các file tạm
+        os.remove(tsp_file)
+        os.remove(par_file)
+        os.remove(tour_file)
+
         return route
 
     def problem_transformations(self, problem: GraphProblem) -> List[List[Union[int, float]]]:
