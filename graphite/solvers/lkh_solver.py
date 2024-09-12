@@ -58,7 +58,6 @@ class LKHGeneticSolver(BaseSolver):
         # Đảm bảo chu trình khép kín bằng cách thêm lại node đầu tiên vào cuối
         if route[0] != route[-1]:
             route.append(route[0])
-
         
         # Xóa các file tạm
         os.remove(tsp_file)
