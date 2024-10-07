@@ -29,7 +29,7 @@ from graphite.base.miner import BaseMinerNeuron
 from graphite.protocol import IsAlive
 
 
-from graphite.solvers import NearestNeighbourSolver, DPSolver
+from graphite.solvers import NearestNeighbourSolver, DPSolver, LKHSolver
 from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV1Synapse, GraphV2Synapse
 
 class Miner(BaseMinerNeuron):
@@ -59,7 +59,8 @@ class Miner(BaseMinerNeuron):
 
         self.solvers = {
             'small': DPSolver(),
-            'large': NearestNeighbourSolver()
+            'large': NearestNeighbourSolver(),
+            'lkh': LKHSolver()
         }
     
     async def is_alive(self, synapse: IsAlive) -> IsAlive:
@@ -106,10 +107,10 @@ class Miner(BaseMinerNeuron):
         # Conditional assignment of problems to each solver
         if synapse.problem.n_nodes < 15:
             # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['small'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         else:
             # Simple heuristic that does not guarantee optimality. 
-            route = await self.solvers['large'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         synapse.solution = route
         
         bt.logging.info(
@@ -153,10 +154,10 @@ class Miner(BaseMinerNeuron):
         # Conditional assignment of problems to each solver
         if synapse.problem.n_nodes < 15:
             # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['small'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         else:
             # Simple heuristic that does not guarantee optimality. 
-            route = await self.solvers['large'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         synapse.solution = route
         
         bt.logging.info(
@@ -200,10 +201,10 @@ class Miner(BaseMinerNeuron):
         # Conditional assignment of problems to each solver
         if synapse.problem.n_nodes < 15:
             # Solves the problem to optimality but is very computationally intensive
-            route = await self.solvers['small'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         else:
             # Simple heuristic that does not guarantee optimality. 
-            route = await self.solvers['large'].solve_problem(synapse.problem)
+            route = await self.solvers["lkh"].solve_problem(synapse.problem)
         synapse.solution = route
         synapse.problem.edges = None
         
@@ -384,10 +385,10 @@ class Miner(BaseMinerNeuron):
                 f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
             )
             return True, "Unrecognized hotkey"
-
+        blacklisted = ["5HNQURvmjjYhTSksi8Wfsw676b4owGwfLR2BFAQzG7H3HhYf"]
         if self.config.blacklist.force_validator_permit:
             # If the config is set to force validator permit, then we should only allow requests from validators.
-            if not self.metagraph.validator_permit[uid]:
+            if not self.metagraph.validator_permit[uid] or self.metagraph.S[uid] < 2000 or synapse.dendrite.hotkey in blacklisted:
                 bt.logging.warning(
                     f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
                 )
