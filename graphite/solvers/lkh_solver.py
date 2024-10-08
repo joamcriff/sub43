@@ -106,7 +106,7 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
     
-    def two_opt(tour, distance_matrix):
+    def two_opt(self, tour, distance_matrix):
         def calculate_total_distance(self, tour, distance_matrix):
             total_distance = 0
             for i in range(len(tour)):
