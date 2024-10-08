@@ -46,8 +46,8 @@ class LKHSolver(BaseSolver):
         KICK_TYPE = 4
         KICKS = 10
         MAX_TRIALS = {trial}   
-        TIME_LIMIT = 20
-        TOTAL_TIME_LIMIT = 20
+        TIME_LIMIT = 10
+        TOTAL_TIME_LIMIT = 10
         """
 
         return parameter_file_content
@@ -81,7 +81,7 @@ class LKHSolver(BaseSolver):
         # Thực hiện 2-opt và giới hạn thời gian xử lý
         start_time = time.time()
         distance_matrix = formatted_problem
-        tour = await self.two_opt(tour, distance_matrix, time_limit=5)
+        tour = await self.two_opt(tour, distance_matrix, time_limit=10)
 
         return tour
     
@@ -106,13 +106,13 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
     
-    async def two_opt(self, tour, distance_matrix, time_limit=5):
+    async def two_opt(self, tour, distance_matrix, time_limit=10):
         n = len(tour)
         best_distance = self.calculate_total_distance(tour, distance_matrix)
 
         start_time = time.time()
         # Chỉ lặp qua 1/3 số node
-        for i in range(n // 3):
+        for i in range(n):
             for j in range(i + 1, n):
                 if j == i:
                     continue
