@@ -64,7 +64,7 @@ class LKHSolver(BaseSolver):
 
             problem_file_path = problem_file.name  # Lưu lại đường dẫn file để dùng cho các tiến trình khác
 
-        def run_lkh_instance(algorithm, problem_file_path):
+        def run_lkh_instance(problem_file_path):
             with tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
                     tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
