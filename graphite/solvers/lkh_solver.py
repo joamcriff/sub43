@@ -48,23 +48,23 @@ class LKHSolver(BaseSolver):
         KICKS = 10
         MAX_TRIALS = {trial}   
         TIME_LIMIT = 20
+        SEED = {random.randint(0, 1000)}
         TOTAL_TIME_LIMIT = 20
         """
 
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id: int) -> List[int]:
-        # Tạo file problem một lần duy nhất
+        # Tạo và tính toán lower bound chỉ một lần
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file:
             # Tạo nội dung file problem
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            problem_file_path = problem_file.name  # Lưu lại đường dẫn file problem
+            problem_file_path = problem_file.name  # Lưu lại đường dẫn file để dùng cho các tiến trình khác
 
-        def run_lkh_instance():
-            # Tạo file parameter và tour cho từng tiến trình
+        def run_lkh_instance(algorithm, problem_file_path):
             with tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
                     tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
