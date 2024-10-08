@@ -73,7 +73,8 @@ class LKHSolver(BaseSolver):
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
-            tour = self.two_opt(tour, formatted_problem)
+            distance_matrix = formatted_problem
+            tour = self.two_opt(tour, distance_matrix)
 
         # Clean up temporary files
         os.remove(problem_file.name)
@@ -107,34 +108,29 @@ class LKHSolver(BaseSolver):
         return tour
     
     def two_opt(self, tour, distance_matrix):
-        def calculate_total_distance(self, tour, distance_matrix):
-            total_distance = 0
-            for i in range(len(tour)):
-                total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
-            return total_distance
-        n = len(tour)
-        best_distance = calculate_total_distance(tour, distance_matrix)
+            n = len(tour)  # Xác định số lượng node trong tour
+            best_distance = self.calculate_total_distance(tour, distance_matrix)
 
-        # Chỉ lặp qua 1/3 số node
-        for i in range(n // 3):
-            for j in range(i + 1, n):  # Bắt đầu từ i + 1 để tránh việc lật lại chính nó
-                if j == i:
-                    continue
+            # Chỉ lặp qua 1/3 số node
+            for i in range(n // 3):
+                for j in range(i + 1, n):  # Bắt đầu từ i + 1 để tránh việc lật lại chính nó
+                    if j == i:
+                        continue
 
-                # Tính toán khoảng cách mới sau khi thực hiện 2-Opt
-                new_tour = tour[:]
-                new_tour[i:j + 1] = reversed(new_tour[i:j + 1])  # Lật đoạn tour từ i đến j
-                new_distance = calculate_total_distance(new_tour, distance_matrix)
+                    # Tính toán khoảng cách mới sau khi thực hiện 2-Opt
+                    new_tour = tour[:]
+                    new_tour[i:j + 1] = reversed(new_tour[i:j + 1])  # Lật đoạn tour từ i đến j
+                    new_distance = self.calculate_total_distance(new_tour, distance_matrix)
 
-                # Nếu khoảng cách mới ngắn hơn, cập nhật tour
-                if new_distance < best_distance:
-                    tour = new_tour
-                    best_distance = new_distance
-                    # Reset vòng lặp vì tour đã thay đổi
-                    i = -1  # Đặt lại i để bắt đầu từ đầu
-                    break  # Dừng vòng lặp j
+                    # Nếu khoảng cách mới ngắn hơn, cập nhật tour
+                    if new_distance < best_distance:
+                        tour = new_tour
+                        best_distance = new_distance
+                        # Reset vòng lặp vì tour đã thay đổi
+                        i = -1  # Đặt lại i để bắt đầu từ đầu
+                        break  # Dừng vòng lặp j
 
-        return tour
+            return tour
 
     def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
         return problem.edges
