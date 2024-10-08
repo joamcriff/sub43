@@ -11,6 +11,7 @@ import bittensor as bt
 import os
 import subprocess
 import tempfile
+import concurrent.futures
 from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
@@ -46,46 +47,63 @@ class LKHSolver(BaseSolver):
         KICK_TYPE = 4
         KICKS = 10
         MAX_TRIALS = {trial}   
-        TIME_LIMIT = 10
-        TOTAL_TIME_LIMIT = 10
+        TIME_LIMIT = 20
+        TOTAL_TIME_LIMIT = 20
         """
 
         return parameter_file_content
     
-
     async def solve(self, formatted_problem, future_id: int) -> List[int]:
-        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
-                tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
-                tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
-
+        # Tạo file problem một lần duy nhất
+        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file:
+            # Tạo nội dung file problem
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
-            parameter_file.write(parameter_file_content)
-            parameter_file.flush()
+            problem_file_path = problem_file.name  # Lưu lại đường dẫn file problem
 
-            # Run LKH
-            subprocess.run([self.lkh_path, parameter_file.name], check=True)
+        def run_lkh_instance():
+            # Tạo file parameter và tour cho từng tiến trình
+            with tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
+                    tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
-            # Read the tour file
-            tour_file.seek(0)
-            tour = self.parse_tour_file(tour_file.name)
+                # Tạo nội dung file parameter với thuật toán ban đầu khác nhau (Greedy hoặc Boruvka)
+                parameter_file_content = self.create_parameter_file(problem_file_path, tour_file.name, len(formatted_problem))
+                parameter_file.write(parameter_file_content)
+                parameter_file.flush()
 
-        # Clean up temporary files
-        os.remove(problem_file.name)
-        os.remove(parameter_file.name)
-        os.remove(tour_file.name)
+                # Chạy LKH
+                subprocess.run([self.lkh_path, parameter_file.name], check=True)
 
-        # Thực hiện 2-opt và giới hạn thời gian xử lý
-        start_time = time.time()
-        distance_matrix = formatted_problem
-        tour = await self.two_opt(tour, distance_matrix, time_limit=10)
+                # Đọc file tour
+                tour_file.seek(0)
+                tour = self.parse_tour_file(tour_file.name)
 
-        return tour
+                # Dọn dẹp file tạm thời
+                os.remove(parameter_file.name)
+                os.remove(tour_file.name)
+
+                return tour
+
+        # Sử dụng ThreadPoolExecutor để chạy song song 4 tiến trình LKH
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(run_lkh_instance),
+                executor.submit(run_lkh_instance),
+                executor.submit(run_lkh_instance),
+                executor.submit(run_lkh_instance)
+            ]
+            tours = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+        # Xóa file problem sau khi hoàn thành
+        os.remove(problem_file_path)
+
+        # Tính toán tổng khoảng cách của mỗi tour và trả về tour tốt nhất
+        best_tour = min(tours, key=lambda tour: self.calculate_total_distance(tour, formatted_problem))
+
+        return best_tour
     
-
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
         for i in range(len(tour)):
@@ -104,36 +122,6 @@ class LKHSolver(BaseSolver):
                 elif in_tour_section:
                     tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
         tour.append(tour[0])
-        return tour
-    
-    async def two_opt(self, tour, distance_matrix, time_limit=10):
-        n = len(tour)
-        best_distance = self.calculate_total_distance(tour, distance_matrix)
-
-        start_time = time.time()
-        # Chỉ lặp qua 1/3 số node
-        for i in range(n):
-            for j in range(i + 1, n):
-                if j == i:
-                    continue
-
-                # Kiểm tra thời gian
-                if time.time() - start_time > time_limit:
-                    return tour  # Trả về tour hiện tại nếu hết thời gian
-
-                # Tính toán khoảng cách mới sau khi thực hiện 2-Opt
-                new_tour = tour[:]
-                new_tour[i:j + 1] = reversed(new_tour[i:j + 1])  # Lật đoạn tour từ i đến j
-                new_distance = self.calculate_total_distance(new_tour, distance_matrix)
-
-                # Nếu khoảng cách mới ngắn hơn, cập nhật tour
-                if new_distance < best_distance:
-                    tour = new_tour
-                    best_distance = new_distance
-                    # Reset vòng lặp vì tour đã thay đổi
-                    i = -1  # Đặt lại i để bắt đầu từ đầu
-                    break  # Dừng vòng lặp j
-
         return tour
 
     def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
