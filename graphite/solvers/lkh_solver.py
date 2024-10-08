@@ -89,10 +89,10 @@ class LKHSolver(BaseSolver):
         # Sử dụng ThreadPoolExecutor để chạy song song 4 tiến trình LKH
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(run_lkh_instance),
-                executor.submit(run_lkh_instance),
-                executor.submit(run_lkh_instance),
-                executor.submit(run_lkh_instance)
+                executor.submit(run_lkh_instance, problem_file_path),
+                executor.submit(run_lkh_instance, problem_file_path),
+                executor.submit(run_lkh_instance, problem_file_path),
+                executor.submit(run_lkh_instance, problem_file_path)
             ]
             tours = [future.result() for future in concurrent.futures.as_completed(futures)]
 
