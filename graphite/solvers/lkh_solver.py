@@ -52,6 +52,7 @@ class LKHSolver(BaseSolver):
 
         return parameter_file_content
     
+
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
@@ -67,18 +68,12 @@ class LKHSolver(BaseSolver):
 
             # Run LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
-            # process = await asyncio.create_subprocess_exec(
-            #     self.lkh_path, parameter_file.name,
-            #     stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            # )
-            # stdout, stderr = await process.communicate()
-
-            # if process.returncode != 0:
-            #     raise RuntimeError(f"LKH failed with error: {stderr.decode()}")
+    
 
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
+            tour = self.two_opt(tour, formatted_problem)
 
         # Clean up temporary files
         os.remove(problem_file.name)
@@ -90,6 +85,7 @@ class LKHSolver(BaseSolver):
         # return tour
         return tour
     
+
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
         for i in range(len(tour)):
@@ -108,6 +104,36 @@ class LKHSolver(BaseSolver):
                 elif in_tour_section:
                     tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
         tour.append(tour[0])
+        return tour
+    
+    def two_opt(tour, distance_matrix):
+        def calculate_total_distance(self, tour, distance_matrix):
+            total_distance = 0
+            for i in range(len(tour)):
+                total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
+            return total_distance
+        n = len(tour)
+        best_distance = calculate_total_distance(tour, distance_matrix)
+
+        # Chỉ lặp qua 1/3 số node
+        for i in range(n // 3):
+            for j in range(i + 1, n):  # Bắt đầu từ i + 1 để tránh việc lật lại chính nó
+                if j == i:
+                    continue
+
+                # Tính toán khoảng cách mới sau khi thực hiện 2-Opt
+                new_tour = tour[:]
+                new_tour[i:j + 1] = reversed(new_tour[i:j + 1])  # Lật đoạn tour từ i đến j
+                new_distance = calculate_total_distance(new_tour, distance_matrix)
+
+                # Nếu khoảng cách mới ngắn hơn, cập nhật tour
+                if new_distance < best_distance:
+                    tour = new_tour
+                    best_distance = new_distance
+                    # Reset vòng lặp vì tour đã thay đổi
+                    i = -1  # Đặt lại i để bắt đầu từ đầu
+                    break  # Dừng vòng lặp j
+
         return tour
 
     def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
