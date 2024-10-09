@@ -16,7 +16,7 @@ from io import StringIO
 class LKHSolver(BaseSolver):
     def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV2Problem(n_nodes=2000, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.concorde_path = "./concorde_build/TSP"  # Đường dẫn đến chương trình Concorde
+        self.concorde_path = "./concorde_build"  # Đường dẫn đến chương trình Concorde
     
     def create_problem_file(self, distance_matrix):
         """Create a problem file compatible with Concorde."""
