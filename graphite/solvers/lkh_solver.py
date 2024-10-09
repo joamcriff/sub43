@@ -22,16 +22,24 @@ class LKHSolver(BaseSolver):
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: TSP
-        TYPE: TSP
-        DIMENSION: {dimension}
-        EDGE_WEIGHT_TYPE: EXPLICIT
-        EDGE_WEIGHT_FORMAT: FULL_MATRIX
-        EDGE_WEIGHT_SECTION
-        """
+    TYPE: TSP
+    DIMENSION: {dimension}
+    EDGE_WEIGHT_TYPE: EXPLICIT
+    EDGE_WEIGHT_FORMAT: FULL_MATRIX
+    EDGE_WEIGHT_SECTION
+    """
         # Sử dụng StringIO và np.savetxt để tạo chuỗi
         buffer = StringIO()
+        
+        # Kiểm tra xem ma trận có phải là vuông không và không có giá trị âm
+        if len(distance_matrix) != dimension or any(len(row) != dimension for row in distance_matrix):
+            raise ValueError("Distance matrix must be square and match the specified dimension.")
+
+        # Sử dụng np.savetxt để ghi ma trận vào buffer
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
+        
+        # Xây dựng nội dung tệp
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
     
