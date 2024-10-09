@@ -15,9 +15,9 @@ from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2000, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.lkh_path = "./concorde_build/TSP/concorde"
+        self.lkh_path = "./LKH-3.0.11/LKH"
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
@@ -36,43 +36,58 @@ class LKHSolver(BaseSolver):
         return problem_file_content
     
     def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
-        # trial = int(200*5000/nodes)
-        # parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
-        # TOUR_FILE = {tour_file_path}
-        # INITIAL_PERIOD = 100
-        # PRECISION = 1e-04
-        # RUNS = 1
-        # INITIAL_TOUR_ALGORITHM = GREEDY
-        # KICK_TYPE = 4
-        # KICKS = 10
-        # MAX_TRIALS = {trial}   
-        # TIME_LIMIT = 20
-        # TOTAL_TIME_LIMIT = 20
-        # """
+        trial = int(200*5000/nodes)
+        parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
+        TOUR_FILE = {tour_file_path}
+        INITIAL_PERIOD = 100
+        PRECISION = 1e-04
+        RUNS = 1
+        INITIAL_TOUR_ALGORITHM = GREEDY
+        KICK_TYPE = 4
+        KICKS = 10
+        MAX_TRIALS = {trial}   
+        TIME_LIMIT = 20
+        TOTAL_TIME_LIMIT = 20
+        """
 
-        return ""
+        return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
+            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            # Chạy Concorde
-            subprocess.run([self.lkh_path, problem_file], check=True)
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
+            parameter_file.write(parameter_file_content)
+            parameter_file.flush()
 
-            # Đọc kết quả từ tệp tour
-            with open(tour_file.name, 'r') as tour_file:
-                tour_result = tour_file.read().strip().split()
-            
-            # Chuyển đổi kết quả thành danh sách số nguyên
-            tour = list(map(int, tour_result))
+            # Run LKH
+            subprocess.run([self.lkh_path, parameter_file.name], check=True)
+            # process = await asyncio.create_subprocess_exec(
+            #     self.lkh_path, parameter_file.name,
+            #     stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            # )
+            # stdout, stderr = await process.communicate()
+
+            # if process.returncode != 0:
+            #     raise RuntimeError(f"LKH failed with error: {stderr.decode()}")
+
+            # Read the tour file
+            tour_file.seek(0)
+            tour = self.parse_tour_file(tour_file.name)
 
         # Clean up temporary files
         os.remove(problem_file.name)
-        # tour_file sẽ được tạo bởi Concorde, có thể xóa nếu không cần thiết.
+        os.remove(parameter_file.name)
+        os.remove(tour_file.name)
+
+        # total_distance = self.calculate_total_distance(tour, formatted_problem)
+
+        # return tour
         return tour
     
     def calculate_total_distance(self, tour, distance_matrix):
