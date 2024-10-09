@@ -45,8 +45,7 @@ EDGE_WEIGHT_SECTION
             problem_file.flush()
 
             # Run Concorde
-            subprocess.run([self.concorde_path, problem_file.name, '-o', tour_file.name], check=True)
-
+            subprocess.run([self.concorde_path, problem_file.name, '-o', tour_file.name, '-v'], check=True)
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
