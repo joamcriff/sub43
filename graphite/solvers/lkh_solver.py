@@ -11,7 +11,6 @@ import bittensor as bt
 import os
 import subprocess
 import tempfile
-import concurrent.futures
 from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
@@ -43,64 +42,45 @@ class LKHSolver(BaseSolver):
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
-        INITIAL_TOUR_ALGORITHM = CHRISTOFIDES
+        INITIAL_TOUR_ALGORITHM = GREEDY
+        KICK_TYPE = 4
+        KICKS = 10
         MAX_TRIALS = {trial}   
         TIME_LIMIT = 20
-        SEED = {random.randint(0, 1000)}
         TOTAL_TIME_LIMIT = 20
         """
 
         return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id: int) -> List[int]:
-        # Tạo và tính toán lower bound chỉ một lần
-        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file:
-            # Tạo nội dung file problem
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
+        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
+            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
+            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
+
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            problem_file_path = problem_file.name  # Lưu lại đường dẫn file để dùng cho các tiến trình khác
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
+            parameter_file.write(parameter_file_content)
+            parameter_file.flush()
 
-        def run_lkh_instance(problem_file_path):
-            with tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
-                    tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
+            # Run LKH
+            subprocess.run([self.lkh_path, parameter_file.name], check=True)
 
-                # Tạo nội dung file parameter với thuật toán ban đầu khác nhau (Greedy hoặc Boruvka)
-                parameter_file_content = self.create_parameter_file(problem_file_path, tour_file.name, len(formatted_problem))
-                parameter_file.write(parameter_file_content)
-                parameter_file.flush()
+            # Read the tour file
+            tour_file.seek(0)
+            tour = self.parse_tour_file(tour_file.name)
 
-                # Chạy LKH
-                subprocess.run([self.lkh_path, parameter_file.name], check=True)
+        # Clean up temporary files
+        os.remove(problem_file.name)
+        os.remove(parameter_file.name)
+        os.remove(tour_file.name)
 
-                # Đọc file tour
-                tour_file.seek(0)
-                tour = self.parse_tour_file(tour_file.name)
+        # total_distance = self.calculate_total_distance(tour, formatted_problem)
 
-                # Dọn dẹp file tạm thời
-                os.remove(parameter_file.name)
-                os.remove(tour_file.name)
-
-                return tour
-
-        # Sử dụng ThreadPoolExecutor để chạy song song 4 tiến trình LKH
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(run_lkh_instance, problem_file_path),
-                executor.submit(run_lkh_instance, problem_file_path),
-                executor.submit(run_lkh_instance, problem_file_path),
-                executor.submit(run_lkh_instance, problem_file_path)
-            ]
-            tours = [future.result() for future in concurrent.futures.as_completed(futures)]
-
-        # Xóa file problem sau khi hoàn thành
-        os.remove(problem_file_path)
-
-        # Tính toán tổng khoảng cách của mỗi tour và trả về tour tốt nhất
-        best_tour = min(tours, key=lambda tour: self.calculate_total_distance(tour, formatted_problem))
-
-        return best_tour
+        # return tour
+        return tour
     
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
