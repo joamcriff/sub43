@@ -43,9 +43,7 @@ class LKHSolver(BaseSolver):
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
-        INITIAL_TOUR_ALGORITHM = GREEDY
-        KICK_TYPE = 4
-        KICKS = 10
+        INITIAL_TOUR_ALGORITHM = CHRISTOFIDES
         MAX_TRIALS = {trial}   
         TIME_LIMIT = 20
         SEED = {random.randint(0, 1000)}
