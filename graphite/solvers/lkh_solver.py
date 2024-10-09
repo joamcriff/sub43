@@ -37,22 +37,25 @@ class LKHSolver(BaseSolver):
     async def solve(self, formatted_problem, future_id: int) -> List[int]:
         """Solve the TSP using Concorde."""
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.tsp', delete=False) as problem_file, \
-             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
+            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
 
             # Create problem file
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
+            # In ra nội dung tệp vấn đề để kiểm tra
+            print("Problem file content:")
+            print(problem_file_content)
+
             # Run Concorde
             try:
-                    # Thêm tùy chọn -S để chỉ định tệp vấn đề
-                    subprocess.run([self.concorde_path, '-S', problem_file.name, '-o', tour_file.name], check=True)
+                subprocess.run([self.concorde_path, '-S', problem_file.name, '-o', tour_file.name], check=True)
             except subprocess.CalledProcessError as e:
-                    print(f"Error occurred: {e}")
-                    # In ra thông tin lỗi và tệp đầu ra nếu có
-                    print(f"Output: {e.output}")
-                    raise RuntimeError("Concorde solver failed to run successfully.")
+                print(f"Error occurred: {e}")
+                print(f"Output: {e.output}")
+                raise RuntimeError("Concorde solver failed to run successfully.")
+
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
