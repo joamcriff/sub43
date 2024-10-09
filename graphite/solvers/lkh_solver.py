@@ -22,12 +22,12 @@ class LKHSolver(BaseSolver):
         """Create a problem file compatible with Concorde."""
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: TSP
-TYPE: TSP
-DIMENSION: {dimension}
-EDGE_WEIGHT_TYPE: EXPLICIT
-EDGE_WEIGHT_FORMAT: FULL_MATRIX
-EDGE_WEIGHT_SECTION
-"""
+        TYPE: TSP
+        DIMENSION: {dimension}
+        EDGE_WEIGHT_TYPE: EXPLICIT
+        EDGE_WEIGHT_FORMAT: FULL_MATRIX
+        EDGE_WEIGHT_SECTION
+        """
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
@@ -46,10 +46,13 @@ EDGE_WEIGHT_SECTION
 
             # Run Concorde
             try:
-                subprocess.run([self.concorde_path, problem_file.name, '-o', tour_file.name], check=True)
+                    # Thêm tùy chọn -S để chỉ định tệp vấn đề
+                    subprocess.run([self.concorde_path, '-S', problem_file.name, '-o', tour_file.name], check=True)
             except subprocess.CalledProcessError as e:
-                print(f"Error occurred: {e}")
-                print(f"Output: {e.output}")
+                    print(f"Error occurred: {e}")
+                    # In ra thông tin lỗi và tệp đầu ra nếu có
+                    print(f"Output: {e.output}")
+                    raise RuntimeError("Concorde solver failed to run successfully.")
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
