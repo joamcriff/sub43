@@ -12,14 +12,14 @@ import os
 import subprocess
 import tempfile
 from io import StringIO
+# from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV2Problem(n_nodes=2000, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.concorde_path = "./concorde_build/TSP/concorde"  # Đường dẫn đến chương trình Concorde
+        self.lkh_path = "./LKH-3.0.11/LKH"
     
     def create_problem_file(self, distance_matrix):
-        """Create a problem file compatible with Concorde."""
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: TSP
         TYPE: TSP
@@ -28,33 +28,53 @@ class LKHSolver(BaseSolver):
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
         """
+        # Sử dụng StringIO và np.savetxt để tạo chuỗi
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
+    
+    def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
+        trial = int(200*5000/nodes)
+        parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
+        TOUR_FILE = {tour_file_path}
+        INITIAL_PERIOD = 100
+        PRECISION = 1e-04
+        RUNS = 1
+        INITIAL_TOUR_ALGORITHM = GREEDY
+        KICK_TYPE = 4
+        KICKS = 10
+        MAX_TRIALS = {trial}   
+        TIME_LIMIT = 20
+        TOTAL_TIME_LIMIT = 20
+        """
 
-    async def solve(self, formatted_problem, future_id: int) -> List[int]:
-        """Solve the TSP using Concorde."""
-        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.tsp', delete=False) as problem_file, \
-            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
+        return parameter_file_content
+    
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
+        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
+            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
+            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
-            # Create problem file
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            # In ra nội dung tệp vấn đề để kiểm tra
-            print("Problem file content:")
-            print(problem_file_content)
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
+            parameter_file.write(parameter_file_content)
+            parameter_file.flush()
 
-            # Run Concorde
-            try:
-                subprocess.run([self.concorde_path, '-S', problem_file.name, '-o', tour_file.name], check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error occurred: {e}")
-                print(f"Output: {e.output}")
-                raise RuntimeError("Concorde solver failed to run successfully.")
+            # Run LKH
+            subprocess.run([self.lkh_path, parameter_file.name], check=True)
+            # process = await asyncio.create_subprocess_exec(
+            #     self.lkh_path, parameter_file.name,
+            #     stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            # )
+            # stdout, stderr = await process.communicate()
+
+            # if process.returncode != 0:
+            #     raise RuntimeError(f"LKH failed with error: {stderr.decode()}")
 
             # Read the tour file
             tour_file.seek(0)
@@ -62,34 +82,40 @@ class LKHSolver(BaseSolver):
 
         # Clean up temporary files
         os.remove(problem_file.name)
+        os.remove(parameter_file.name)
         os.remove(tour_file.name)
 
+        # total_distance = self.calculate_total_distance(tour, formatted_problem)
+
+        # return tour
         return tour
     
-    def parse_tour_file(self, tour_file_path):
-        """Parse the output from Concorde."""
-        tour = []
-        with open(tour_file_path, 'r') as file:
-            for line in file:
-                tour.append(int(line.strip()))
-        tour.append(tour[0])  # Hoàn thành chu trình
-        return tour
-
     def calculate_total_distance(self, tour, distance_matrix):
-        """Calculate the total distance of a tour."""
         total_distance = 0
-        for i in range(len(tour) - 1):
-            total_distance += distance_matrix[tour[i]][tour[i + 1]]
+        for i in range(len(tour)):
+            total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
         return total_distance
     
-    def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
-        """Transform the problem data."""
-        return problem.edges
+    def parse_tour_file(self, tour_file_path):
+        tour = []
+        with open(tour_file_path, 'r') as file:
+            in_tour_section = False
+            for line in file:
+                if line.strip() == 'TOUR_SECTION':
+                    in_tour_section = True
+                elif line.strip() == '-1':
+                    break
+                elif in_tour_section:
+                    tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
+        tour.append(tour[0])
+        return tour
 
+    def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
+        return problem.edges
+    
 if __name__ == "__main__":
     ## Test case for GraphV2Problem
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
-    import random
     loaded_datasets = {}
     with np.load('dataset/Asia_MSB.npz') as f:
         loaded_datasets["Asia_MSB"] = np.array(f['data'])
@@ -110,22 +136,22 @@ if __name__ == "__main__":
     # randomly select n_nodes indexes from the selected graph
     selected_node_idxs = random.sample(range(26000000), n_nodes)
     test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
-
+    
     if isinstance(test_problem, GraphV2Problem):
         test_problem.edges = recreate_edges(test_problem)
     
     print("edges", test_problem.edges)
     print("Problem", test_problem)
 
-    concorde_solver = LKHSolver(problem_types=[test_problem])
+    lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
 
     # Run the solver to get the tour
-    route = asyncio.run(concorde_solver.solve_problem(test_problem))
+    route = asyncio.run(lkh_solver.solve_problem(test_problem))
 
     # Calculate total distance of the tour
-    total_distance = concorde_solver.calculate_total_distance(route, test_problem.edges)
+    total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
 
-    print(f"{concorde_solver.__class__.__name__} Tour: {route}")
+    print(f"{lkh_solver.__class__.__name__} Tour: {route}")
     print(f"Total distance of the tour: {total_distance}")
-    print(f"{concorde_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+    print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
