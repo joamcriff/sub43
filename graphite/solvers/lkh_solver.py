@@ -35,22 +35,22 @@ class LKHSolver(BaseSolver):
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
     
-    # def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
-    #     trial = int(200*5000/nodes)
-    #     parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
-    #     TOUR_FILE = {tour_file_path}
-    #     INITIAL_PERIOD = 100
-    #     PRECISION = 1e-04
-    #     RUNS = 1
-    #     INITIAL_TOUR_ALGORITHM = GREEDY
-    #     KICK_TYPE = 4
-    #     KICKS = 10
-    #     MAX_TRIALS = {trial}   
-    #     TIME_LIMIT = 20
-    #     TOTAL_TIME_LIMIT = 20
-    #     """
+    def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
+        trial = int(200*5000/nodes)
+        parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
+        TOUR_FILE = {tour_file_path}
+        INITIAL_PERIOD = 100
+        PRECISION = 1e-04
+        RUNS = 1
+        INITIAL_TOUR_ALGORITHM = GREEDY
+        KICK_TYPE = 4
+        KICKS = 10
+        MAX_TRIALS = {trial}   
+        TIME_LIMIT = 20
+        TOTAL_TIME_LIMIT = 20
+        """
 
-    #     return parameter_file_content
+        return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
@@ -61,9 +61,9 @@ class LKHSolver(BaseSolver):
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            # parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
-            # parameter_file.write(parameter_file_content)
-            # parameter_file.flush()
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
+            parameter_file.write(parameter_file_content)
+            parameter_file.flush()
 
             # Run LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
