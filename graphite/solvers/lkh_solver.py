@@ -39,10 +39,12 @@ class LKHSolver(BaseSolver):
         trial = int(200*5000/nodes)
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
-        INITIAL_PERIOD = 100
+        INITIAL_PERIOD = {nodes/2}
         PRECISION = 1e-04
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
+        KICK_TYPE = 4
+        KICKS = 10
         MAX_TRIALS = {trial}   
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
