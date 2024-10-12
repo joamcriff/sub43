@@ -36,7 +36,7 @@ class LKHSolver(BaseSolver):
         return problem_file_content
     
     def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
-        trial = 0
+        trial = int(200*5000/nodes)
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
         INITIAL_PERIOD = 100
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         else:
             return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
       
-    n_nodes = 5000
+    n_nodes = 3000
     # randomly select n_nodes indexes from the selected graph
     selected_node_idxs = random.sample(range(26000000), n_nodes)
     test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
