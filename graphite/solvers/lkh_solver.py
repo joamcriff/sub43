@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from io import StringIO
 
-class ConcordeSolver(BaseSolver):
+class LKHSolver(BaseSolver):
     def __init__(self, problem_types: List[Union[GraphV1Problem, GraphV2Problem]] = [GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
         self.concorde_path = "./concorde/TSP/concorde"
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     print("edges", test_problem.edges)
     print("Problem", test_problem)
 
-    concorde_solver = ConcordeSolver(problem_types=[test_problem])
+    concorde_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
 
     route = asyncio.run(concorde_solver.solve_problem(test_problem))
