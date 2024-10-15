@@ -18,24 +18,24 @@ class LKHSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
         self.concorde_path = "./concorde_build/TSP/concorde"
 
-        def create_problem_file(self, distance_matrix):
+    def create_problem_file(self, distance_matrix):
         # Đảm bảo ma trận là đối xứng
-            if not np.allclose(distance_matrix, distance_matrix.T):
-                distance_matrix = (distance_matrix + distance_matrix.T) / 2
-        
-            dimension = len(distance_matrix)
-            problem_file_content = f"""NAME: TSP
-        TYPE: TSP
-        DIMENSION: {dimension}
-        EDGE_WEIGHT_TYPE: EXPLICIT
-        EDGE_WEIGHT_FORMAT: FULL_MATRIX
-        EDGE_WEIGHT_SECTION
-        """
-            buffer = StringIO()
-            np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
-            matrix_string = buffer.getvalue().strip()
-            problem_file_content += matrix_string + "\nEOF\n"
-            return problem_file_content
+        if not np.allclose(distance_matrix, distance_matrix.T):
+            distance_matrix = (distance_matrix + distance_matrix.T) / 2
+    
+        dimension = len(distance_matrix)
+        problem_file_content = f"""NAME: TSP
+    TYPE: TSP
+    DIMENSION: {dimension}
+    EDGE_WEIGHT_TYPE: EXPLICIT
+    EDGE_WEIGHT_FORMAT: FULL_MATRIX
+    EDGE_WEIGHT_SECTION
+    """
+        buffer = StringIO()
+        np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
+        matrix_string = buffer.getvalue().strip()
+        problem_file_content += matrix_string + "\nEOF\n"
+        return problem_file_content
 
     async def solve(self, formatted_problem, future_id: int) -> List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.tsp', delete=False) as problem_file, \
