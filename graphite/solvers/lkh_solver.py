@@ -32,6 +32,8 @@ class LKHSolver(BaseSolver):
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
         problem_file_content += matrix_string + "\nEOF\n"
+         # In ra nội dung file đầu vào
+        print("Problem file content:\n", problem_file_content)
         return problem_file_content
 
     async def solve(self, formatted_problem, future_id:int)->List[int]:
