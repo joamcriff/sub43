@@ -1,13 +1,17 @@
+from typing import List, Union
+from graphite.solvers.base_solver import BaseSolver
+from graphite.protocol import GraphV1Problem, GraphV2Problem
+from graphite.utils.graph_utils import timeout
+import numpy as np
+import time
+import asyncio
+import random
+
+import bittensor as bt
 import os
 import subprocess
 import tempfile
 from io import StringIO
-import numpy as np
-import asyncio
-import random
-from typing import List, Union
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphV1Problem, GraphV2Problem
 
 class LKHSolver(BaseSolver):
     def __init__(self, problem_types: List[Union[GraphV1Problem, GraphV2Problem]] = [GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
