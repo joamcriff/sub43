@@ -37,11 +37,10 @@ class LKHSolver(BaseSolver):
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.tsp', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
-            formatted_problem1 =  "9999 11 8 4\
-                                   10 9999 7 2\
-                                   6 5 9999 4\
-                                   6 3 9 9999\
-                                   EOF"
+            formatted_problem1 = np.array([[9999, 11, 8, 4],
+                                           [10, 9999, 7, 2],
+                                           [6, 5, 9999, 4],
+                                           [6, 3, 9, 9999]], dtype=int)
             problem_file_content = self.create_problem_file(formatted_problem1)
             problem_file.write(problem_file_content)
             problem_file.flush()
