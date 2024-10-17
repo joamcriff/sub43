@@ -12,57 +12,52 @@ import os
 import subprocess
 import tempfile
 from io import StringIO
-# from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types: List[Union[GraphV1Problem, GraphV2Problem]] = [GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
         self.concorde_path = "./concorde_build/TSP/concorde"
 
     def create_problem_file(self, distance_matrix):
+        # Đảm bảo ma trận là đối xứng
+        if not np.allclose(distance_matrix, distance_matrix.T):
+            distance_matrix = (distance_matrix + distance_matrix.T) / 2
+
         dimension = len(distance_matrix)
-        problem_file_content = f"""NAME: TSP
-        TYPE: TSP
-        DIMENSION: {dimension}
-        EDGE_WEIGHT_TYPE: EXPLICIT
-        EDGE_WEIGHT_FORMAT: FULL_MATRIX
-        EDGE_WEIGHT_SECTION
-        """
+        problem_file_content = f"""NAME: demo
+TYPE: TSP
+COMMENT: 4 vertexes asymmetric problem
+DIMENSION: {dimension}
+EDGE_WEIGHT_TYPE: EXPLICIT
+EDGE_WEIGHT_FORMAT: FULL_MATRIX
+EDGE_WEIGHT_SECTION
+"""
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
 
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
+    async def solve(self, formatted_problem, future_id: int) -> List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.tsp', delete=False) as problem_file, \
-            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
-            formatted_problem1 = np.array([[9999, 11, 8, 4],
-                                           [10, 9999, 7, 2],
-                                           [6, 5, 9999, 4],
-                                           [6, 3, 9, 9999]], dtype=int)
-            problem_file_content = self.create_problem_file(formatted_problem1)
+                tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.sol', delete=False) as tour_file:
+
+            problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            # Run Concorde
+            # Chạy Concorde
             subprocess.run([self.concorde_path, '-o', tour_file.name, problem_file.name], check=True)
 
-            # Read the tour file
+            # Đọc tệp tour
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
 
-        # Clean up temporary files
+        # Xóa các tệp tạm thời
         os.remove(problem_file.name)
         os.remove(tour_file.name)
 
         return tour
-
-    def calculate_total_distance(self, tour, distance_matrix):
-        total_distance = 0
-        for i in range(len(tour)):
-            total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
-        return total_distance
 
     def parse_tour_file(self, tour_file_path):
         tour = []
@@ -72,6 +67,12 @@ class LKHSolver(BaseSolver):
                     tour.append(int(line.strip()) - 1)  # Concorde uses 1-based indexing
         tour.append(tour[0])
         return tour
+
+    def calculate_total_distance(self, tour, distance_matrix):
+        total_distance = 0
+        for i in range(len(tour)):
+            total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
+        return total_distance
 
     def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
         return problem.edges
