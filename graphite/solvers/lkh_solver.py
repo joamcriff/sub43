@@ -27,11 +27,16 @@ class LKHSolver(BaseSolver):
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
+        9999 11 8 4
+        10 9999 7 2
+        6 5 9999 4
+        6 3 9 9999
+        EOF
         """
-        buffer = StringIO()
-        np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
-        matrix_string = buffer.getvalue().strip()
-        problem_file_content += matrix_string + "\nEOF\n"
+        # buffer = StringIO()
+        # np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
+        # matrix_string = buffer.getvalue().strip()
+        # problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
 
     async def solve(self, formatted_problem, future_id:int)->List[int]:
