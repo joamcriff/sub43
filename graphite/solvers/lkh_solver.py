@@ -26,7 +26,7 @@ class LKHSolver(BaseSolver):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: demo
 TYPE: TSP
-COMMENT: 4 vertexes asymmetric problem
+COMMENT: {dimension} vertexes asymmetric problem
 DIMENSION: {dimension}
 EDGE_WEIGHT_TYPE: EXPLICIT
 EDGE_WEIGHT_FORMAT: FULL_MATRIX
