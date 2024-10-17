@@ -16,7 +16,7 @@ from io import StringIO
 class LKHSolver(BaseSolver):
     def __init__(self, problem_types: List[Union[GraphV1Problem, GraphV2Problem]] = [GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
-        self.concorde_path = "./concorde/TSP/concorde"
+        self.concorde_path = "../concorde_build/TSP/concorde"
 
     def create_problem_file(self, distance_matrix):
         # Đảm bảo ma trận là đối xứng
