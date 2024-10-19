@@ -54,11 +54,16 @@ EDGE_WEIGHT_SECTION
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
         except subprocess.TimeoutExpired:
-            print("Thời gian chạy vượt quá 20 giây!")
-            return []  # Hoặc xử lý theo cách bạn muốn
+            print("Thời gian chạy vượt quá 20 giây! Trả về tour hiện tại.")
+            # Nếu tour_file vẫn còn tồn tại và có giá trị, đọc giá trị tour từ tệp
+            if os.path.exists(tour_file.name):
+                tour_file.seek(0)
+                tour = self.parse_tour_file(tour_file.name)
+            else:
+                tour = []  # Hoặc giá trị mặc định nếu không có tour nào
         except subprocess.CalledProcessError as e:
             print(f"Lỗi khi chạy Concorde: {e.stderr}")
-            return []  # Hoặc xử lý theo cách bạn muốn
+            tour = []  # Hoặc xử lý theo cách bạn muốn
 
         # Xóa các tệp tạm thời
         os.remove(problem_file.name)
