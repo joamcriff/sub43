@@ -46,24 +46,20 @@ EDGE_WEIGHT_SECTION
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-        try:
-            # Chạy Concorde với giới hạn thời gian 20 giây
-            subprocess.run([self.concorde_path, '-S', problem_file.name, '-o', tour_file.name], check=True, timeout=20)
+            # Chạy Concorde
+            # Chạy Concorde với các tùy chọn tối ưu
+            subprocess.run([self.concorde_path, 
+                            '-o', tour_file.name, 
+                            problem_file.name, 
+                            '-C', '8',  # Hoặc kích thước khác
+                            '-V',        # Chạy cắt nhanh
+                            '-y',        # Sử dụng cắt đơn giản
+                            '-t', '20'], # Giới hạn thời gian xử lý
+                        check=True)
 
             # Đọc tệp tour
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
-        except subprocess.TimeoutExpired:
-            print("Thời gian chạy vượt quá 20 giây! Trả về tour hiện tại.")
-            # Nếu tour_file vẫn còn tồn tại và có giá trị, đọc giá trị tour từ tệp
-            if os.path.exists(tour_file.name):
-                tour_file.seek(0)
-                tour = self.parse_tour_file(tour_file.name)
-            else:
-                tour = []  # Hoặc giá trị mặc định nếu không có tour nào
-        except subprocess.CalledProcessError as e:
-            print(f"Lỗi khi chạy Concorde: {e.stderr}")
-            tour = []  # Hoặc xử lý theo cách bạn muốn
 
         # Xóa các tệp tạm thời
         os.remove(problem_file.name)
