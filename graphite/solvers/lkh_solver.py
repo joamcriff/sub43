@@ -47,7 +47,7 @@ EDGE_WEIGHT_SECTION
             problem_file.flush()
 
             # Chạy Concorde
-            subprocess.run([self.concorde_path, '-o', tour_file.name, problem_file.name], check=True)
+            subprocess.run([self.concorde_path, '-o', tour_file.name, problem_file.name,  '-t', '20'], check=True)
 
             # Đọc tệp tour
             tour_file.seek(0)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         else:
             return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
       
-    n_nodes = 5
+    n_nodes = 3000
     selected_node_idxs = random.sample(range(26000000), n_nodes)
     test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
     
