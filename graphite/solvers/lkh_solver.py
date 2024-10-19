@@ -47,15 +47,7 @@ EDGE_WEIGHT_SECTION
             problem_file.flush()
 
             # Chạy Concorde
-            # Chạy Concorde với các tùy chọn tối ưu
-            subprocess.run([self.concorde_path, 
-                            '-o', tour_file.name, 
-                            problem_file.name, 
-                            '-C', '8',  # Hoặc kích thước khác
-                            '-V',        # Chạy cắt nhanh
-                            '-y',        # Sử dụng cắt đơn giản
-                            '-t', '20'], # Giới hạn thời gian xử lý
-                        check=True)
+            subprocess.run([self.concorde_path, '-o', tour_file.name, problem_file.name], check=True)
 
             # Đọc tệp tour
             tour_file.seek(0)
