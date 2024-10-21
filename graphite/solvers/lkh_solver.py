@@ -40,7 +40,7 @@ class LKHSolver(BaseSolver):
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
         INITIAL_PERIOD = 100
-        PRECISION = 1e-04
+        PRECISION = 1e-05
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
         KICK_TYPE = 4
