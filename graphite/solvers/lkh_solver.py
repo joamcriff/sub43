@@ -36,18 +36,23 @@ class LKHSolver(BaseSolver):
         return problem_file_content
     
     def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
-        trial = int(200*5000/nodes)
+        trial = int(200 * 5000 / nodes)
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
-        POPULATION_SIZE = 5
-        MAX_TRIALS = {trial}   
+        KICK_TYPE = 4
+        KICKS = 10
+        POPULATION_SIZE = 2
+        MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
+        PATCHING_A = 1
+        PATCHING_C = 2
         """
+        return parameter_file_content
 
         return parameter_file_content
     
