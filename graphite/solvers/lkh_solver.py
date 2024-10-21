@@ -104,7 +104,7 @@ class LKHSolver(BaseSolver):
                     break
                 elif in_tour_section:
                     tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
-        tour.append(tour[0])
+        tour.append(tour[0])  # Đảm bảo tour quay lại điểm bắt đầu
         return tour
 
     def record_results(self, distance_matrix, tour):
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # Run the solver to get the tour
-    route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    route = asyncio.run(lkh_solver.solve(test_problem.edges, future_id=0))
 
     # Calculate total distance of the tour
     total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
