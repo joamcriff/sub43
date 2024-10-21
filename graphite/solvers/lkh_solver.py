@@ -43,8 +43,8 @@ class LKHSolver(BaseSolver):
         PRECISION = 1e-04
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
-        KICK_TYPE = 10
-        KICKS = 15
+        KICK_TYPE = 15
+        KICKS = 20
         POPULATION_SIZE = 2
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
