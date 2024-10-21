@@ -6,19 +6,19 @@ import numpy as np
 import time
 import asyncio
 import random
-
-import bittensor as bt
 import os
 import subprocess
 import tempfile
 from io import StringIO
-# from greedy_solver import NearestNeighbourSolver
+from sklearn.ensemble import RandomForestRegressor
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types: List[Union[GraphV1Problem, GraphV2Problem]] = [GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
-    
+        self.training_data = []  # Danh sách để ghi lại dữ liệu huấn luyện
+        self.model = RandomForestRegressor()  # Khởi tạo mô hình học máy
+
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: TSP
@@ -28,7 +28,6 @@ class LKHSolver(BaseSolver):
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
         """
-        # Sử dụng StringIO và np.savetxt để tạo chuỗi
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
@@ -37,6 +36,12 @@ class LKHSolver(BaseSolver):
     
     def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
         trial = int(200 * 5000 / nodes)
+        predicted_kicks = 10  # Dự đoán KICKS mặc định
+        if self.model:
+            # Sử dụng mô hình để dự đoán số KICKS
+            features = self.extract_features(np.zeros((nodes, nodes)))  # Cần truyền ma trận khoảng cách thực tế
+            predicted_kicks = int(self.model.predict([features])[0])
+        
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
         INITIAL_PERIOD = 100
@@ -44,19 +49,15 @@ class LKHSolver(BaseSolver):
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
         KICK_TYPE = 4
-        KICKS = 10
+        KICKS = {predicted_kicks}
         POPULATION_SIZE = 2
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
-        PATCHING_A = 1
-        PATCHING_C = 2
         """
         return parameter_file_content
-
-        return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
+    async def solve(self, formatted_problem, future_id: int) -> List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -71,27 +72,19 @@ class LKHSolver(BaseSolver):
 
             # Run LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
-            # process = await asyncio.create_subprocess_exec(
-            #     self.lkh_path, parameter_file.name,
-            #     stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            # )
-            # stdout, stderr = await process.communicate()
-
-            # if process.returncode != 0:
-            #     raise RuntimeError(f"LKH failed with error: {stderr.decode()}")
 
             # Read the tour file
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
+
+            # Ghi lại kết quả
+            self.record_results(formatted_problem, tour)
 
         # Clean up temporary files
         os.remove(problem_file.name)
         os.remove(parameter_file.name)
         os.remove(tour_file.name)
 
-        # total_distance = self.calculate_total_distance(tour, formatted_problem)
-
-        # return tour
         return tour
     
     def calculate_total_distance(self, tour, distance_matrix):
@@ -114,11 +107,25 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
 
+    def record_results(self, distance_matrix, tour):
+        total_distance = self.calculate_total_distance(tour, distance_matrix)
+        features = self.extract_features(distance_matrix)  # Phương thức trích xuất đặc trưng
+        self.training_data.append((features, total_distance))
+
+    def extract_features(self, distance_matrix):
+        # Trích xuất các đặc trưng cần thiết từ ma trận khoảng cách
+        return np.mean(distance_matrix), np.max(distance_matrix), np.min(distance_matrix), np.std(distance_matrix)
+
+    def train_model(self):
+        if not self.training_data:
+            return
+        X, y = zip(*self.training_data)
+        self.model.fit(X, y)  # Huấn luyện mô hình
+
     def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
         return problem.edges
     
 if __name__ == "__main__":
-    ## Test case for GraphV2Problem
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
     loaded_datasets = {}
     with np.load('dataset/Asia_MSB.npz') as f:
@@ -135,9 +142,8 @@ if __name__ == "__main__":
             return man_2d_edges(node_coords)
         else:
             return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
-      
+
     n_nodes = 5000
-    # randomly select n_nodes indexes from the selected graph
     selected_node_idxs = random.sample(range(26000000), n_nodes)
     test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
     
@@ -159,3 +165,6 @@ if __name__ == "__main__":
     print(f"{lkh_solver.__class__.__name__} Tour: {route}")
     print(f"Total distance of the tour: {total_distance}")
     print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+
+    # Huấn luyện mô hình sau khi đã ghi lại dữ liệu
+    lkh_solver.train_model()
