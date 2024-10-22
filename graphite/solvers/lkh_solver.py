@@ -124,7 +124,7 @@ if __name__ == "__main__":
         else:
             return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
       
-    n_nodes = 5000
+    n_nodes = 3369
     # randomly select n_nodes indexes from the selected graph
     selected_node_idxs = random.sample(range(26000000), n_nodes)
     test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
