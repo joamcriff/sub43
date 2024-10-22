@@ -45,8 +45,7 @@ class LKHSolver(BaseSolver):
         INITIAL_TOUR_ALGORITHM = GREEDY
         KICK_TYPE = 15
         KICKS = 20
-        BACKTRACKING = YES
-        POPULATION_SIZE = 2
+        POPULATION_SIZE = 5
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
