@@ -19,11 +19,10 @@
 
 from typing import List
 from graphite.solvers import *
-from graphite.solvers.naive_v2_solver import NaiveSolver
-from graphite.data.dataset_generator_v2 import MetricTSPV2Generator
+from graphite.data.dataset_generator_v2 import MetricMTSPV2Generator
 from graphite.data.dataset_utils import load_default_dataset
-from graphite.protocol import GraphV2Problem, GraphV2Synapse
-from graphite.utils.graph_utils import get_tour_distance
+from graphite.protocol import GraphV2ProblemMulti, GraphV2Synapse
+from graphite.utils.graph_utils import get_multi_minmax_tour_distance
 import pandas as pd
 import tqdm
 import time
@@ -34,7 +33,7 @@ import os
 import matplotlib
 
 ROOT_DIR = "tests"
-SAVE_DIR = "evaluation_results"
+SAVE_DIR = "evaluation_results_multi"
 N_PROBLEMS = 100
 
 def can_show_plot():
@@ -51,7 +50,7 @@ def can_show_plot():
 
     return True
 
-def compare_problems(solvers: List, problems: List[GraphV2Problem], loaded_datasets: dict):
+def compare_problems(solvers: List, problems: List[GraphV2ProblemMulti], loaded_datasets: dict):
     problem_types = set([problem.problem_type for problem in problems])
     mock_synapses = [GraphV2Synapse(problem=problem) for problem in problems]
     # results = {solver.__class__.__name__: [] for solver in solvers}
@@ -63,14 +62,14 @@ def compare_problems(solvers: List, problems: List[GraphV2Problem], loaded_datas
         print(f"Running Solver {i+1} - {solver.__class__.__name__}")
         for mock_synapse in tqdm.tqdm(mock_synapses, desc=f"{solver.__class__.__name__} solving {problem_types}"):
             # generate the edges adhoc
-            MetricTSPV2Generator.recreate_edges(problem = mock_synapse.problem, loaded_datasets=loaded_datasets)
+            MetricMTSPV2Generator.recreate_edges(problem = mock_synapse.problem, loaded_datasets=loaded_datasets)
             start_time = time.perf_counter()
             mock_synapse.solution = asyncio.run(solver.solve_problem(mock_synapse.problem))
 
             # remove edges and nodes to reduce memory consumption
             run_time = time.perf_counter() - start_time
             run_times.append(run_time)
-            scores.append(get_tour_distance(mock_synapse))
+            scores.append(get_multi_minmax_tour_distance(mock_synapse))
             mock_synapse.problem.edges = None
             mock_synapse.problem.nodes = None
         run_times_dict[solver.__class__.__name__] = run_times
@@ -111,21 +110,21 @@ def main():
     mock = Mock()
     load_default_dataset(mock) # load dataset as an attribute to mock instance
 
-    # Use MetricTSPGenerator to generate problems of various graph sizes
-    metric_problems, metric_sizes = MetricTSPV2Generator.generate_n_samples_without_edges(N_PROBLEMS, mock.loaded_datasets)
+    # Use MetricmTSPGenerator to generate problems of various graph sizes
+    metric_mtsp_problems, metric_mtsp_sizes = MetricMTSPV2Generator.generate_n_samples_without_edges(N_PROBLEMS, mock.loaded_datasets)
 
     # test_solvers = [NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver()]
-    test_solvers = [NearestNeighbourSolver(), NaiveSolver()]
+    test_solvers = [NearestNeighbourMultiSolver(), NearestNeighbourMultiSolver2(), InsertionMultiSolver()]
 
-    run_times_dict, scores_dict = compare_problems(test_solvers, metric_problems, mock.loaded_datasets)
+    run_times_dict, scores_dict = compare_problems(test_solvers, metric_mtsp_problems, mock.loaded_datasets)
 
     # Create DataFrames for run times and scores
     run_times_df = pd.DataFrame(run_times_dict)
     scores_df = pd.DataFrame(scores_dict)
 
     # Add the problem size classification
-    run_times_df['problem_size'] = metric_sizes
-    scores_df['problem_size'] = metric_sizes
+    run_times_df['problem_size'] = metric_mtsp_sizes
+    scores_df['problem_size'] = metric_mtsp_sizes
 
     # Set the problem index
     run_times_df.index.name = 'problem_index'

@@ -1,7 +1,7 @@
 # The MIT License (MIT)
 # Copyright © 2023 Yuma Rao
 # Graphite-AI
-# Copyright © 2023 Graphite-AI
+# Copyright © 2024 Graphite-AI
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -17,23 +17,27 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from graphite.solvers import NearestNeighbourSolver, NearestNeighbourMultiSolver, BeamSearchSolver, HPNSolver, DPSolver
-from graphite.utils.graph_utils import get_tour_distance, get_multi_minmax_tour_distance
+from typing import List, Union
+from graphite.solvers.base_solver import BaseSolver
+from graphite.protocol import GraphV1Problem, GraphV2Problem
+from graphite.utils.graph_utils import timeout
+import numpy as np
+import time
+import asyncio
+import random
 
-BENCHMARK_SOLUTIONS = {
-    'Metric TSP': NearestNeighbourSolver,
-    'General TSP': NearestNeighbourSolver,
-    'Metric mTSP': NearestNeighbourMultiSolver,
-    'General mTSP': NearestNeighbourMultiSolver
-} # mapping benchmark solvers to each problem
+import bittensor as bt
 
-COST_FUNCTIONS = {
-    'Metric TSP': get_tour_distance,
-    'General TSP': get_tour_distance,
-    'Metric mTSP': get_multi_minmax_tour_distance,
-    'General mTSP': get_multi_minmax_tour_distance
-}
+class NaiveSolver(BaseSolver):
+    '''
+    Mock solver for comparison. Returns the route as per the random selection.
+    '''
+    def __init__(self, problem_types:List[Union[GraphV2Problem]]=[GraphV2Problem()]):
+        super().__init__(problem_types=problem_types)
 
-HEURISTIC_SOLVERS = [NearestNeighbourSolver, BeamSearchSolver, HPNSolver]
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
+        route = formatted_problem
+        return route
 
-EXACT_SOLVERS = [DPSolver]
+    def problem_transformations(self, problem: Union[GraphV2Problem]):
+        return list(range(len(problem.selected_ids))) + [0]
