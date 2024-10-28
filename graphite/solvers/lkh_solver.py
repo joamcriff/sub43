@@ -18,7 +18,7 @@ from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]=[GraphV1Problem(n_nodes=2), GraphV1Problem(n_nodes=2, directed=True, problem_type='General TSP')]):
+    def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
     
