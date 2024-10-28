@@ -137,7 +137,7 @@ if __name__ == "__main__":
     
     print("edges", test_problem.edges)
     print("Problem", test_problem)
-
+    print(test_problem.n_salesmen)
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
 
