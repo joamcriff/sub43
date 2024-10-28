@@ -56,7 +56,9 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
+    async def solve(self, formatted_problem: GraphV2ProblemMulti, future_id:int)->List[int]:
+        if not hasattr(formatted_problem, 'n_salesmen'):
+            raise AttributeError("The formatted_problem must have the attribute 'n_salesmen'.")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -149,7 +151,6 @@ if __name__ == "__main__":
     score2 = get_multi_minmax_tour_distance(test_synapse)
 
     print(f"{lkh_solver.__class__.__name__} Tour: {route}")
-    print(f"{lkh_solver.__class__.__name__} Tour: {route2}")
     # print(f"Total distance of the tour: {total_distance}")
     print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
     print(f"LKH scored: {score1} while Multi scored: {score2}")
