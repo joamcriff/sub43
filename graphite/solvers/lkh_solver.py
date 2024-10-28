@@ -18,30 +18,34 @@ from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
+    def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
-        problem_file_content = f"""NAME: TSP
-        TYPE: TSP
+        problem_file_content = f"""NAME: mTSP
+        TYPE: MINSUM
         DIMENSION: {dimension}
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
         """
-        # Sử dụng StringIO và np.savetxt để tạo chuỗi
+        # Sử dụng StringIO và np.savetxt để tạo chuỗi cho ma trận khoảng cách
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
     
-    def create_parameter_file(self, problem_file_path, tour_file_path, salesmen=1, nodes=5000):
+    def create_parameter_file(self, problem_file_path, tour_file_path, salesmen=2, nodes=5000, single_depot=True, depots=None):
         trial = int(500 * 5000 / nodes)
+        depots_str = " ".join(map(str, [d + 1 for d in depots])) if depots else "1"
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
+        SALESMEN = {salesmen}
+        SINGLE_DEPOT = {"YES" if single_depot else "NO"}
+        DEPOT = {depots_str}
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
@@ -52,11 +56,10 @@ class LKHSolver(BaseSolver):
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
-        SALESMEN = {salesmen}
         """
         return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
+    async def solve(self, formatted_problem, future_id: int) -> List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -64,25 +67,30 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            salesmen=formatted_problem.n_salesmen
-            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, salesmen,len(formatted_problem))
+            
+            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
+            salesmen = formatted_problem.n_salesmen
+            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
+            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
+            
+            parameter_file_content = self.create_parameter_file(
+                problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
+            )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
 
-            # Run LKH
+            # Chạy LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
-            # Read the tour file
+            
+            # Đọc file tour
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
 
-        # Clean up temporary files
+        # Xóa các file tạm
         os.remove(problem_file.name)
         os.remove(parameter_file.name)
         os.remove(tour_file.name)
 
-        # total_distance = self.calculate_total_distance(tour, formatted_problem)
-
-        # return tour
         return tour
     
     def calculate_total_distance(self, tour, distance_matrix):
