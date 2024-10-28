@@ -139,14 +139,15 @@ if __name__ == "__main__":
 
     n_nodes = 2000
     m = 10
-
+    print("chay lan 1")
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
-    
+    print("chay lan 2")
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
     # Run the solver to get the tour
     route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    print("chay lan 3")
     # Calculate total distance of the tour
     # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
