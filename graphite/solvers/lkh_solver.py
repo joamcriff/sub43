@@ -56,9 +56,7 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
     
-    async def solve(self, formatted_problem: GraphV2ProblemMulti, future_id:int)->List[int]:
-        if not hasattr(formatted_problem, 'n_salesmen'):
-            raise AttributeError("The formatted_problem must have the attribute 'n_salesmen'.")
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -107,7 +105,7 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
 
-    def problem_transformations(self, problem: Union[GraphV2ProblemMulti]):
+    def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
         return problem.edges
     
 if __name__ == "__main__":
