@@ -65,7 +65,7 @@ class LKHSolver(BaseSolver):
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name,formatted_problem.n_salesmen ,len(formatted_problem))
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, formatted_problem.n_salesmen,len(formatted_problem))
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
 
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     # Run the solver to get the tour
     route = asyncio.run(lkh_solver.solve_problem(test_problem))
     # Calculate total distance of the tour
-    total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
-    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
-    # score1 = get_multi_minmax_tour_distance(test_synapse)
+    # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    score1 = get_multi_minmax_tour_distance(test_synapse)
 
 
     solver2 = NearestNeighbourMultiSolver(problem_types=[test_problem])
@@ -157,4 +157,4 @@ if __name__ == "__main__":
     print(f"{lkh_solver.__class__.__name__} Tour: {route}")
     # print(f"Total distance of the tour: {total_distance}")
     print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    print(f"LKH scored: {total_distance} while Multi scored: {score2}")
+    print(f"LKH scored: {score1} while Multi scored: {score2}")
