@@ -52,7 +52,7 @@ class LKHSolver(BaseSolver):
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
-        SALESMAN = {sales}
+        SALESMEN = {sales}
         """
         return parameter_file_content
     
