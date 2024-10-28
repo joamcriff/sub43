@@ -24,8 +24,8 @@ class LKHSolver(BaseSolver):
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
-        problem_file_content = f"""NAME: TSP
-        TYPE: TSP
+        problem_file_content = f"""NAME: mTSP
+        TYPE: mTSP
         DIMENSION: {dimension}
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
@@ -149,6 +149,7 @@ if __name__ == "__main__":
     score2 = get_multi_minmax_tour_distance(test_synapse)
 
     print(f"{lkh_solver.__class__.__name__} Tour: {route}")
+    print(f"{lkh_solver.__class__.__name__} Tour: {route2}")
     # print(f"Total distance of the tour: {total_distance}")
     print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
     print(f"LKH scored: {score1} while Multi scored: {score2}")
