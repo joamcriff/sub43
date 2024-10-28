@@ -24,8 +24,8 @@ class LKHSolver(BaseSolver):
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
-        problem_file_content = f"""NAME: mTSP
-        TYPE: mTSP
+        problem_file_content = f"""NAME: TSP
+        TYPE: TSP
         DIMENSION: {dimension}
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX

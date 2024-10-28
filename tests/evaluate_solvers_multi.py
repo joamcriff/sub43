@@ -114,7 +114,7 @@ def main():
     metric_mtsp_problems, metric_mtsp_sizes = MetricMTSPV2Generator.generate_n_samples_without_edges(N_PROBLEMS, mock.loaded_datasets)
 
     # test_solvers = [NearestNeighbourSolver(), BeamSearchSolver(), HPNSolver()]
-    test_solvers = [NearestNeighbourMultiSolver(), NearestNeighbourMultiSolver2(), InsertionMultiSolver()]
+    test_solvers = [NearestNeighbourMultiSolver(), NearestNeighbourMultiSolver2(), InsertionMultiSolver(), LKHSolver()]
 
     run_times_dict, scores_dict = compare_problems(test_solvers, metric_mtsp_problems, mock.loaded_datasets)
 

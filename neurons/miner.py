@@ -58,11 +58,11 @@ class Miner(BaseMinerNeuron):
         )
 
         self.solvers = {
-            'small': DPSolver(),
-            'large': NearestNeighbourSolver(),
-            'multi_large_1': NearestNeighbourMultiSolver(),
-            'multi_large_2': NearestNeighbourMultiSolver2(),
-            'multi_large_3': InsertionMultiSolver()
+            'small': LKHSolver(),
+            'large': LKHSolver(),
+            'multi_large_1': LKHSolver(),
+            'multi_large_2': LKHSolver(),
+            'multi_large_3': LKHSolver()
         }
     
     async def is_alive(self, synapse: IsAlive) -> IsAlive:
