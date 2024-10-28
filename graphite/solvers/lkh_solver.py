@@ -21,7 +21,7 @@ class LKHSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
-    
+    print("chay LKH lan 1")
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: mTSP
@@ -60,6 +60,7 @@ class LKHSolver(BaseSolver):
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id: int) -> List[int]:
+        print("chay LKH lan 2")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -92,6 +93,8 @@ class LKHSolver(BaseSolver):
         os.remove(tour_file.name)
 
         return tour
+    
+    print("chay LKH lan 3")
     
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
@@ -139,7 +142,6 @@ if __name__ == "__main__":
 
     n_nodes = 2000
     m = 10
-    print("chay lan 1")
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
     print("chay lan 2")
