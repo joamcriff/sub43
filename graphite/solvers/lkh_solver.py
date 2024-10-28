@@ -1,6 +1,9 @@
 from typing import List, Union
 from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphV1Problem, GraphV2Problem
+from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV2ProblemMulti, GraphV2Synapse
+from graphite.utils.graph_utils import timeout, get_multi_minmax_tour_distance
+from graphite.solvers.greedy_solver_multi import NearestNeighbourMultiSolver
+from graphite.data.dataset_utils import load_default_dataset
 from graphite.utils.graph_utils import timeout
 import numpy as np
 import time
@@ -35,7 +38,7 @@ class LKHSolver(BaseSolver):
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
     
-    def create_parameter_file(self, problem_file_path, tour_file_path, nodes=5000):
+    def create_parameter_file(self, problem_file_path, tour_file_path, sales=1, nodes=5000):
         trial = int(500 * 5000 / nodes)
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
@@ -49,6 +52,7 @@ class LKHSolver(BaseSolver):
         MAX_TRIALS = {trial}
         TIME_LIMIT = 20
         TOTAL_TIME_LIMIT = 20
+        SALESMAN = {sales}
         """
         return parameter_file_content
     
@@ -61,7 +65,7 @@ class LKHSolver(BaseSolver):
             problem_file.write(problem_file_content)
             problem_file.flush()
 
-            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name, len(formatted_problem))
+            parameter_file_content = self.create_parameter_file(problem_file.name, tour_file.name,formatted_problem.n_salesmen ,len(formatted_problem))
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
 
@@ -101,35 +105,35 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
 
-    def problem_transformations(self, problem: Union[GraphV1Problem, GraphV2Problem]):
+    def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
         return problem.edges
     
 if __name__ == "__main__":
     ## Test case for GraphV2Problem
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
-    loaded_datasets = {}
-    with np.load('dataset/Asia_MSB.npz') as f:
-        loaded_datasets["Asia_MSB"] = np.array(f['data'])
+    class Mock:
+        def __init__(self) -> None:
+            pass        
 
-    def recreate_edges(problem: GraphV2Problem):
-        node_coords_np = loaded_datasets[problem.dataset_ref]
-        node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
-        if problem.cost_function == "Geom":
-            return geom_edges(node_coords)
-        elif problem.cost_function == "Euclidean2D":
-            return euc_2d_edges(node_coords)
-        elif problem.cost_function == "Manhatten2D":
-            return man_2d_edges(node_coords)
-        else:
-            return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
-      
-    n_nodes = 3272
-    # randomly select n_nodes indexes from the selected graph
-    selected_node_idxs = random.sample(range(26000000), n_nodes)
-    test_problem = GraphV2Problem(problem_type="Metric TSP", n_nodes=n_nodes, selected_ids=selected_node_idxs, cost_function="Geom", dataset_ref="Asia_MSB")
-    
-    if isinstance(test_problem, GraphV2Problem):
-        test_problem.edges = recreate_edges(test_problem)
+        def recreate_edges(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
+            node_coords_np = self.loaded_datasets[problem.dataset_ref]["data"]
+            node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
+            if problem.cost_function == "Geom":
+                return geom_edges(node_coords)
+            elif problem.cost_function == "Euclidean2D":
+                return euc_2d_edges(node_coords)
+            elif problem.cost_function == "Manhatten2D":
+                return man_2d_edges(node_coords)
+            else:
+                return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
+    mock = Mock()
+    load_default_dataset(mock)
+
+    n_nodes = 2000
+    m = 10
+
+    test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
+    test_problem.edges = mock.recreate_edges(test_problem)
     
     print("edges", test_problem.edges)
     print("Problem", test_problem)
@@ -139,10 +143,18 @@ if __name__ == "__main__":
 
     # Run the solver to get the tour
     route = asyncio.run(lkh_solver.solve_problem(test_problem))
-
     # Calculate total distance of the tour
-    total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
+    # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    score1 = get_multi_minmax_tour_distance(test_synapse)
+
+
+    solver2 = NearestNeighbourMultiSolver(problem_types=[test_problem])
+    route2 = asyncio.run(solver2.solve_problem(test_problem))
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
+    score2 = get_multi_minmax_tour_distance(test_synapse)
 
     print(f"{lkh_solver.__class__.__name__} Tour: {route}")
-    print(f"Total distance of the tour: {total_distance}")
+    # print(f"Total distance of the tour: {total_distance}")
     print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+    print(f"LKH scored: {score1} while Multi scored: {score2}")
