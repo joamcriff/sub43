@@ -78,7 +78,7 @@ class LKHSolver(BaseSolver):
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
-
+            print(formatted_problem)
             # Chạy LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
             
