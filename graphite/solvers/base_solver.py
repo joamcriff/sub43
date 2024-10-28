@@ -28,7 +28,7 @@ import time
 from typing import Union
 import numpy as np
 
-DEFAULT_SOLVER_TIMEOUT = 30
+DEFAULT_SOLVER_TIMEOUT = 20
 
 class BaseSolver(ABC):
     def __init__(self, problem_types:List[Union[GraphV1Problem, GraphV2Problem]]):
