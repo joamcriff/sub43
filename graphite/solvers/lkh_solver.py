@@ -107,7 +107,7 @@ class LKHSolver(BaseSolver):
         tour.append(tour[0])
         return tour
 
-    def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
+    def problem_transformations(self, problem: Union[GraphV2ProblemMulti]):
         return problem.edges
     
 if __name__ == "__main__":
