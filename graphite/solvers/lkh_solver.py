@@ -68,7 +68,7 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            
+            print(formatted_problem)
             # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
             salesmen = formatted_problem.n_salesmen
             depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
@@ -79,7 +79,6 @@ class LKHSolver(BaseSolver):
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
-            print(formatted_problem)
             # Chạy LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
             
