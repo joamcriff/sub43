@@ -18,10 +18,9 @@ from io import StringIO
 # from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
+    def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
-    print("chay LKH lan 1")
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: mTSP
@@ -59,8 +58,7 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id: int) -> List[int]:
-        print("chay LKH lan 2")
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -68,11 +66,11 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            print(formatted_problem)
-            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
-            salesmen = formatted_problem.n_salesmen
-            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
-            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
+            print(problem_file)
+            # # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
+            # salesmen = formatted_problem.n_salesmen
+            # depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
+            # single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
             
             parameter_file_content = self.create_parameter_file(
                 problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
@@ -92,8 +90,6 @@ class LKHSolver(BaseSolver):
         os.remove(tour_file.name)
 
         return tour
-    
-    print("chay LKH lan 3")
     
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
@@ -144,12 +140,10 @@ if __name__ == "__main__":
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     print(test_problem, "hihi")
     test_problem.edges = mock.recreate_edges(test_problem)
-    print("chay lan 2")
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
     # Run the solver to get the tour
     route = asyncio.run(lkh_solver.solve_problem(test_problem))
-    print("chay lan 3")
     # Calculate total distance of the tour
     # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
