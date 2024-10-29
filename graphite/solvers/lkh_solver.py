@@ -143,6 +143,7 @@ if __name__ == "__main__":
     n_nodes = 2000
     m = 10
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
+    print(test_problem, "hihi")
     test_problem.edges = mock.recreate_edges(test_problem)
     print("chay lan 2")
     lkh_solver = LKHSolver(problem_types=[test_problem])
