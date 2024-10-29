@@ -59,6 +59,7 @@ class LKHSolver(BaseSolver):
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
+        print(formatted_problem, "LKH")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -66,7 +67,6 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            print(formatted_problem, "LKH")
             # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
             salesmen = formatted_problem.n_salesmen
             depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
@@ -138,7 +138,6 @@ if __name__ == "__main__":
     n_nodes = 2000
     m = 10
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
-    print(test_problem, "hihi")
     test_problem.edges = mock.recreate_edges(test_problem)
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
