@@ -66,11 +66,11 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            print(problem_file)
-            # # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
-            # salesmen = formatted_problem.n_salesmen
-            # depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
-            # single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
+            print(formatted_problem, "LKH")
+            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
+            salesmen = formatted_problem.n_salesmen
+            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
+            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
             
             parameter_file_content = self.create_parameter_file(
                 problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
