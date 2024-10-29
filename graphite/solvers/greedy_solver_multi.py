@@ -55,7 +55,7 @@ class NearestNeighbourMultiSolver(BaseSolver):
                 start_index += size
 
             return sublists
-
+        print(formatted_problem, "greedy")
         # naively apply greedy solution and compute total tour length
         m = formatted_problem.n_salesmen
         distance_matrix = formatted_problem.edges
