@@ -21,6 +21,8 @@ class LKHSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
+        print(problem_types, "LKH")
+    
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: mTSP
@@ -59,7 +61,6 @@ class LKHSolver(BaseSolver):
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
-        print(formatted_problem, "LKH")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -139,14 +140,14 @@ if __name__ == "__main__":
     m = 10
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
+
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
-    # Run the solver to get the tour
     route = asyncio.run(lkh_solver.solve_problem(test_problem))
-    # Calculate total distance of the tour
     # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
     score1 = get_multi_minmax_tour_distance(test_synapse)
+
     solver2 = NearestNeighbourMultiSolver(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
