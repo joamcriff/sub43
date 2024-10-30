@@ -25,6 +25,39 @@ class LKHSolver(BaseSolver):
         self.lkh_path = "./LKH-3.0.11/LKH"
         print(problem_types, "LKH init")
     
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
+        print(formatted_problem, "LKH solve")
+        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
+            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
+            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
+
+            problem_file_content = self.create_problem_file(formatted_problem)
+            problem_file.write(problem_file_content)
+            problem_file.flush()
+            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
+            salesmen = formatted_problem.n_salesmen
+            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
+            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
+            
+            parameter_file_content = self.create_parameter_file(
+                problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
+            )
+            parameter_file.write(parameter_file_content)
+            parameter_file.flush()
+            # Chạy LKH
+            subprocess.run([self.lkh_path, parameter_file.name], check=True)
+            
+            # Đọc file tour
+            tour_file.seek(0)
+            tour = self.parse_tour_file(tour_file.name)
+
+        # Xóa các file tạm
+        os.remove(problem_file.name)
+        os.remove(parameter_file.name)
+        os.remove(tour_file.name)
+
+        return tour
+    
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: mTSP
@@ -62,38 +95,6 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
     
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
-        print(formatted_problem, "LKH solve")
-        with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
-            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
-            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
-
-            problem_file_content = self.create_problem_file(formatted_problem)
-            problem_file.write(problem_file_content)
-            problem_file.flush()
-            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
-            salesmen = formatted_problem.n_salesmen
-            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
-            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
-            
-            parameter_file_content = self.create_parameter_file(
-                problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
-            )
-            parameter_file.write(parameter_file_content)
-            parameter_file.flush()
-            # Chạy LKH
-            subprocess.run([self.lkh_path, parameter_file.name], check=True)
-            
-            # Đọc file tour
-            tour_file.seek(0)
-            tour = self.parse_tour_file(tour_file.name)
-
-        # Xóa các file tạm
-        os.remove(problem_file.name)
-        os.remove(parameter_file.name)
-        os.remove(tour_file.name)
-
-        return tour
     
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
