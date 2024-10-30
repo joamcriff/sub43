@@ -1,10 +1,12 @@
 from typing import List, Union
+import matplotlib.pyplot as plt
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV2ProblemMulti, GraphV2Synapse
 from graphite.utils.graph_utils import timeout, get_multi_minmax_tour_distance
 from graphite.solvers.greedy_solver_multi import NearestNeighbourMultiSolver
 from graphite.data.dataset_utils import load_default_dataset
 from graphite.utils.graph_utils import timeout
+from graphite.data.distance import geom_edges, euc_2d_edges, man_2d_edges
 import numpy as np
 import time
 import asyncio
@@ -21,7 +23,7 @@ class LKHSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
-        print(problem_types, "LKH")
+        print(problem_types, "LKH init")
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
@@ -61,6 +63,7 @@ class LKHSolver(BaseSolver):
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
+        print(formatted_problem, "LKH solve")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
