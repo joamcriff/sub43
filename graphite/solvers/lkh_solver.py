@@ -17,7 +17,6 @@ import os
 import subprocess
 import tempfile
 from io import StringIO
-# from greedy_solver import NearestNeighbourSolver
 
 class LKHSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
@@ -34,7 +33,6 @@ class LKHSolver(BaseSolver):
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
         """
-        # Sử dụng StringIO và np.savetxt để tạo chuỗi cho ma trận khoảng cách
         buffer = StringIO()
         np.savetxt(buffer, distance_matrix, fmt='%d', delimiter=' ')
         matrix_string = buffer.getvalue().strip()
@@ -63,7 +61,6 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
 
-    
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
@@ -72,7 +69,6 @@ class LKHSolver(BaseSolver):
             problem_file_content = self.create_problem_file(formatted_problem.edges, formatted_problem.n_salesmen)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
             salesmen = formatted_problem.n_salesmen
             
             parameter_file_content = self.create_parameter_file(
@@ -80,20 +76,39 @@ class LKHSolver(BaseSolver):
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
-            # Chạy LKH
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
             
-            # Đọc file tour
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
 
-        # Xóa các file tạm
         os.remove(problem_file.name)
         os.remove(parameter_file.name)
         os.remove(tour_file.name)
 
-        return tour
+        # Transform the tour to match the output format of NearestNeighbourMultiSolver
+        tours = self.split_into_sublists(tour[1:], formatted_problem.n_salesmen)
+        closed_tours = [[0] + tour + [0] for tour in tours]
+        return closed_tours
     
+    def split_into_sublists(self, original_list, n_salesmen):
+        n = len(original_list)
+        sublist_size = n // n_salesmen
+        remainder = n % n_salesmen
+
+        sublists = []
+        start_index = 0
+
+        for i in range(n_salesmen):
+            if i < remainder:
+                size = sublist_size + 1
+            else:
+                size = sublist_size
+                
+            sublists.append(original_list[start_index:start_index + size])
+            start_index += size
+
+        return sublists
+
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
         for i in range(len(tour)):
@@ -118,7 +133,6 @@ class LKHSolver(BaseSolver):
         return problem
     
 if __name__ == "__main__":
-    ## Test case for GraphV2Problem
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
     class Mock:
         def __init__(self) -> None:
@@ -143,20 +157,17 @@ if __name__ == "__main__":
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
 
-    # lkh_solver = LKHSolver(problem_types=[test_problem])
-    # start_time = time.time()
-    # route = asyncio.run(lkh_solver.solve_problem(test_problem))
-    # # total_distance = lkh_solver.calculate_total_distance(route, test_problem.edges)
-    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
-    # score1 = get_multi_minmax_tour_distance(test_synapse)
+    lkh_solver = LKHSolver(problem_types=[test_problem])
+    start_time = time.time()
+    route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    score1 = get_multi_minmax_tour_distance(test_synapse)
 
     solver2 = NearestNeighbourMultiSolver(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
     score2 = get_multi_minmax_tour_distance(test_synapse)
 
-    # print(f"{lkh_solver.__class__.__name__} Tour: {route}")
-    # # print(f"Total distance of the tour: {total_distance}")
-    # print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    # print(f"LKH scored: {score1} while Multi scored: {score2}")
-    print(f"Multi scored: {score2}")
+    print(f"{lkh_solver.__class__.__name__} Tour: {route}")
+    print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+    print(f"LKH scored: {score1} while Multi scored: {score2}")
