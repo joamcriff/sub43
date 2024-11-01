@@ -38,7 +38,7 @@ class LKHSolver(BaseSolver):
             single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
             
             parameter_file_content = self.create_parameter_file(
-                problem_file.name, tour_file.name, salesmen, len(formatted_problem), single_depot, depots
+                problem_file.name, tour_file.name, salesmen, len(formatted_problem.edges), single_depot, depots
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
