@@ -117,7 +117,7 @@ class LKHSolver(BaseSolver):
         return tour
 
     def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
-        return problem.edges
+        return problem
     
 if __name__ == "__main__":
     ## Test case for GraphV2Problem
