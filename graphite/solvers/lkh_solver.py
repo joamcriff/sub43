@@ -53,6 +53,8 @@ class LKHSolver(BaseSolver):
         TRACE_LEVEL = 1
         OPTIMUM = 1183
         MTSP_OBJECTIVE = MINMAX
+        TIME_LIMIT = 20
+        TOTAL_TIME_LIMIT = 20
         """
         return parameter_file_content
     
@@ -60,8 +62,6 @@ class LKHSolver(BaseSolver):
         # KICKS = 20
         # POPULATION_SIZE = 20
         # MAX_TRIALS = {trial}
-        # TIME_LIMIT = 20
-        # TOTAL_TIME_LIMIT = 20
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
