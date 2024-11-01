@@ -40,14 +40,11 @@ class LKHSolver(BaseSolver):
         problem_file_content += matrix_string + "\nEOF\n"
         return problem_file_content
     
-    def create_parameter_file(self, problem_file_path, tour_file_path, salesmen=2, nodes=5000, single_depot=True, depots=None):
+    def create_parameter_file(self, problem_file_path, tour_file_path, salesmen=2, nodes=5000):
         trial = int(500 * 5000 / nodes)
-        depots_str = " ".join(map(str, [d + 1 for d in depots])) if depots else "1"
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
         TOUR_FILE = {tour_file_path}
         SALESMEN = {salesmen}
-        SINGLE_DEPOT = {"YES" if single_depot else "NO"}
-        DEPOT = {depots_str}
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
@@ -72,11 +69,9 @@ class LKHSolver(BaseSolver):
             problem_file.flush()
             # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
             salesmen = formatted_problem.n_salesmen
-            depots = formatted_problem.depots if hasattr(formatted_problem, "depots") else [0]
-            single_depot = formatted_problem.single_depot if hasattr(formatted_problem, "single_depot") else True
             
             parameter_file_content = self.create_parameter_file(
-                problem_file.name, tour_file.name, salesmen, len(formatted_problem.edges), single_depot, depots
+                problem_file.name, tour_file.name, salesmen, len(formatted_problem.edges)
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
