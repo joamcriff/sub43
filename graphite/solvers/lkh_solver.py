@@ -24,11 +24,12 @@ class LKHSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
     
-    def create_problem_file(self, distance_matrix):
+    def create_problem_file(self, distance_matrix, salesmen):
         dimension = len(distance_matrix)
         problem_file_content = f"""NAME: ATSP
         TYPE: ATSP
         DIMENSION: {dimension}
+        VEHICLES : {salesmen}
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
         EDGE_WEIGHT_SECTION
@@ -68,7 +69,7 @@ class LKHSolver(BaseSolver):
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
-            problem_file_content = self.create_problem_file(formatted_problem.edges)
+            problem_file_content = self.create_problem_file(formatted_problem.edges, formatted_problem.n_salesmen)
             problem_file.write(problem_file_content)
             problem_file.flush()
             # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
