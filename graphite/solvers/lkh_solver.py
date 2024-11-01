@@ -62,11 +62,12 @@ class LKHSolver(BaseSolver):
         return parameter_file_content
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
+        print(formatted_problem, "LKH")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
-            problem_file_content = self.create_problem_file(formatted_problem)
+            problem_file_content = self.create_problem_file(formatted_problem.edges)
             problem_file.write(problem_file_content)
             problem_file.flush()
             # Trích xuất thông tin về số lượng salesman, depot và kiểu depot
