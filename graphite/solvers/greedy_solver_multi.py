@@ -36,7 +36,6 @@ class NearestNeighbourMultiSolver(BaseSolver):
         super().__init__(problem_types=problem_types)
 
     async def solve(self, formatted_problem, future_id:int)->List[int]:
-        print(formatted_problem, "greedy")
         def split_into_sublists(original_list, n_salesmen):
             n = len(original_list)
             sublist_size = n // n_salesmen  # Size of each sublist
