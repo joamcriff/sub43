@@ -26,8 +26,8 @@ class LKHSolver(BaseSolver):
     
     def create_problem_file(self, distance_matrix):
         dimension = len(distance_matrix)
-        problem_file_content = f"""NAME: mTSP
-        TYPE: mTSP
+        problem_file_content = f"""NAME: ATSP
+        TYPE: ATSP
         DIMENSION: {dimension}
         EDGE_WEIGHT_TYPE: EXPLICIT
         EDGE_WEIGHT_FORMAT: FULL_MATRIX
@@ -49,17 +49,21 @@ class LKHSolver(BaseSolver):
         PRECISION = 1e-04
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
-        KICK_TYPE = 15
-        KICKS = 20
-        POPULATION_SIZE = 20
-        MAX_TRIALS = {trial}
-        TIME_LIMIT = 20
-        TOTAL_TIME_LIMIT = 20
+        MAX_CANDIDATES = 6
+        TRACE_LEVEL = 1
+        OPTIMUM = 1183
+        MTSP_OBJECTIVE = MINMAX
         """
         return parameter_file_content
     
+        # KICK_TYPE = 15
+        # KICKS = 20
+        # POPULATION_SIZE = 20
+        # MAX_TRIALS = {trial}
+        # TIME_LIMIT = 20
+        # TOTAL_TIME_LIMIT = 20
+    
     async def solve(self, formatted_problem, future_id:int)->List[int]:
-        print(formatted_problem, "LKH")
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
