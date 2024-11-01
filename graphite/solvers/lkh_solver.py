@@ -43,25 +43,25 @@ class LKHSolver(BaseSolver):
     def create_parameter_file(self, problem_file_path, tour_file_path, salesmen=2, nodes=5000):
         trial = int(500 * 5000 / nodes)
         parameter_file_content = f"""PROBLEM_FILE = {problem_file_path}
-        TOUR_FILE = {tour_file_path}
+        TOUR_FILE = {tour_file_path}     
+        KICK_TYPE = 15
+        KICKS = 20
+        POPULATION_SIZE = 20
+        MAX_TRIALS = {trial}
         SALESMEN = {salesmen}
         INITIAL_PERIOD = 100
         PRECISION = 1e-04
         RUNS = 1
         INITIAL_TOUR_ALGORITHM = GREEDY
-        MAX_CANDIDATES = 6
+        MAX_CANDIDATES = 5
         TRACE_LEVEL = 1
         OPTIMUM = 1183
         MTSP_OBJECTIVE = MINMAX
-        TIME_LIMIT = 20
-        TOTAL_TIME_LIMIT = 20
+        TIME_LIMIT = 17
+        TOTAL_TIME_LIMIT = 17
         """
         return parameter_file_content
-    
-        # KICK_TYPE = 15
-        # KICKS = 20
-        # POPULATION_SIZE = 20
-        # MAX_TRIALS = {trial}
+
     
     async def solve(self, formatted_problem, future_id:int)->List[int]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
