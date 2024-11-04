@@ -99,7 +99,16 @@ class LKHSolver(BaseSolver):
         # Verify that all nodes except the depot are included exactly once
         expected_nodes = set(range(1, len(formatted_problem.edges)))  # Nodes 1 to n-1
         visited_nodes = set(node for tour in closed_tours for node in tour if node != 0)
-        assert visited_nodes == expected_nodes, f"Missing or duplicate nodes: {expected_nodes - visited_nodes}"
+        
+        print("Visited nodes:", sorted(visited_nodes))
+        print("Expected nodes:", sorted(expected_nodes))
+        
+        # Detailed difference check
+        missing_nodes = expected_nodes - visited_nodes
+        extra_nodes = visited_nodes - expected_nodes
+        
+        assert missing_nodes == set() and extra_nodes == set(), \
+            f"Missing nodes: {missing_nodes}, Extra nodes: {extra_nodes}"
         
         return closed_tours
     
