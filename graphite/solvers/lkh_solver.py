@@ -19,7 +19,7 @@ import tempfile
 from io import StringIO
 
 class LKHSolver(BaseSolver):
-    def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
+    def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
         self.lkh_path = "./LKH-3.0.11/LKH"
     
@@ -61,7 +61,7 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
 
-    async def solve(self, formatted_problem, future_id:int)->List[int]:
+    async def solve(self, formatted_problem, future_id: int) -> List[List[int]]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -87,7 +87,20 @@ class LKHSolver(BaseSolver):
 
         # Transform the tour to match the output format of NearestNeighbourMultiSolver
         tours = self.split_into_sublists(tour[1:], formatted_problem.n_salesmen)
+        
+        # Debugging output to verify tours
+        all_nodes = set()
+        for idx, tour in enumerate(tours):
+            print(f"Tour for salesman {idx + 1}: {tour}")
+            all_nodes.update(tour)
+        
         closed_tours = [[0] + tour + [0] for tour in tours]
+
+        # Verify that all nodes except the depot are included exactly once
+        expected_nodes = set(range(1, len(formatted_problem.edges)))  # Nodes 1 to n-1
+        visited_nodes = set(node for tour in closed_tours for node in tour if node != 0)
+        assert visited_nodes == expected_nodes, f"Missing or duplicate nodes: {expected_nodes - visited_nodes}"
+        
         return closed_tours
     
     def split_into_sublists(self, original_list, n_salesmen):
@@ -126,7 +139,7 @@ class LKHSolver(BaseSolver):
                     break
                 elif in_tour_section:
                     tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
-        tour.append(tour[0])
+        tour.append(tour[0])  # Ensure the tour closes by returning to the start
         return tour
 
     def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
