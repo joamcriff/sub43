@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV2ProblemMulti, GraphV2Synapse
 from graphite.solvers.greedy_solver_multi_2 import NearestNeighbourMultiSolver2
+from graphite.solvers.insertion_solver_multi import InsertionMultiSolver
 from graphite.utils.graph_utils import timeout, get_multi_minmax_tour_distance
 from graphite.solvers.greedy_solver_multi import NearestNeighbourMultiSolver
 from graphite.data.dataset_utils import load_default_dataset
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     # test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
     # score1 = get_multi_minmax_tour_distance(test_synapse)
 
-    solver1 = NearestNeighbourMultiSolver(problem_types=[test_problem])
+    solver1 = InsertionMultiSolver(problem_types=[test_problem])
     route1 = asyncio.run(solver1.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
     score1 = get_multi_minmax_tour_distance(test_synapse)
