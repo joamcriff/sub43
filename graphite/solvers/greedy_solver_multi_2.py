@@ -107,7 +107,7 @@ if __name__=="__main__":
     load_default_dataset(mock)
 
     n_nodes = 4894
-    m = 2
+    m = 10
 
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
