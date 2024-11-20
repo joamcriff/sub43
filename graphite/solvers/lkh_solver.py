@@ -2,6 +2,7 @@ from typing import List, Union
 import matplotlib.pyplot as plt
 from graphite.solvers.base_solver import BaseSolver
 from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV2ProblemMulti, GraphV2Synapse
+from graphite.solvers.greedy_solver_multi_2 import NearestNeighbourMultiSolver2
 from graphite.utils.graph_utils import timeout, get_multi_minmax_tour_distance
 from graphite.solvers.greedy_solver_multi import NearestNeighbourMultiSolver
 from graphite.data.dataset_utils import load_default_dataset
@@ -157,17 +158,22 @@ if __name__ == "__main__":
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
 
-    lkh_solver = LKHSolver(problem_types=[test_problem])
-    start_time = time.time()
-    route = asyncio.run(lkh_solver.solve_problem(test_problem))
-    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    # lkh_solver = LKHSolver(problem_types=[test_problem])
+    # start_time = time.time()
+    # route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    # score1 = get_multi_minmax_tour_distance(test_synapse)
+
+    solver1 = NearestNeighbourMultiSolver(problem_types=[test_problem])
+    route1 = asyncio.run(solver1.solve_problem(test_problem))
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
     score1 = get_multi_minmax_tour_distance(test_synapse)
 
-    solver2 = NearestNeighbourMultiSolver(problem_types=[test_problem])
+    solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
     score2 = get_multi_minmax_tour_distance(test_synapse)
 
-    print(f"{lkh_solver.__class__.__name__} Tour: {route}")
-    print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+    # print(f"{lkh_solver.__class__.__name__} Tour: {route}")
+    # print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
     print(f"LKH scored: {score1} while Multi scored: {score2}")
