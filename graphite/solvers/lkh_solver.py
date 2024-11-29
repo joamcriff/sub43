@@ -181,16 +181,16 @@ if __name__ == "__main__":
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
 
-    lkh_solver = LKHSolver(problem_types=[test_problem])
-    start_time = time.time()
-    route = asyncio.run(lkh_solver.solve_problem(test_problem))
-    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
-    score1 = get_multi_minmax_tour_distance(test_synapse)
-
-    # solver1 = InsertionMultiSolver(problem_types=[test_problem])
-    # route1 = asyncio.run(solver1.solve_problem(test_problem))
-    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
+    # lkh_solver = LKHSolver(problem_types=[test_problem])
+    # start_time = time.time()
+    # route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
     # score1 = get_multi_minmax_tour_distance(test_synapse)
+
+    solver1 = InsertionMultiSolver(problem_types=[test_problem])
+    route1 = asyncio.run(solver1.solve_problem(test_problem))
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
+    score1 = get_multi_minmax_tour_distance(test_synapse)
 
     solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
