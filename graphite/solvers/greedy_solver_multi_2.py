@@ -39,48 +39,37 @@ class NearestNeighbourMultiSolver2(BaseSolver):
     def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
     
-    async def solve(self, formatted_problem, future_id: int) -> List[int]:
+    async def solve(self, formatted_problem, future_id:int)->List[int]:
         def subtour_distance(distance_matrix, subtour):
             subtour = np.array(subtour)
             next_points = np.roll(subtour, -1) 
             distances = distance_matrix[subtour, next_points] 
-            return np.sum(distances)
+            total_distance = np.sum(distances)
+            return total_distance
         
-        # Khởi tạo các tham số
+        # construct m tours
         m = formatted_problem.n_salesmen
         distance_matrix = np.array(formatted_problem.edges)
-        unvisited = set(range(1, formatted_problem.n_nodes))  # Tập các city chưa được ghé thăm
+        unvisited = set(range(1, formatted_problem.n_nodes))
         initial_next_cities = random.sample(list(unvisited), m)
-        [unvisited.remove(v) for v in initial_next_cities]  # Loại bỏ các điểm khởi tạo
-        tours = [[0, v] for v in initial_next_cities]  # Khởi tạo subtours ban đầu
+        [unvisited.remove(v) for v in initial_next_cities] # remove random chosen start points
+        tours = [[0,v] for v in initial_next_cities] # initialize m random initial subtours
         distances = [subtour_distance(distance_matrix, subtour) for subtour in tours]
-
         while unvisited:
-            # Chọn subtour ngắn nhất
             chosen_index = distances.index(min(distances))
             chosen_subtour = tours[chosen_index]
-
-            # Tìm city tiếp theo giảm tổng khoảng cách lớn nhất
-            min_increase = float('inf')
+            min_distance = np.inf
             chosen_city = None
             for city in unvisited:
-                # Khoảng cách sau khi thêm city vào subtour
-                increase = (
-                    distance_matrix[chosen_subtour[-1], city] +  # Đi từ điểm cuối đến city
-                    distance_matrix[city, 0] -                  # Đi từ city về depot
-                    distance_matrix[chosen_subtour[-1], 0]     # Loại bỏ đường cũ về depot
-                )
-                if increase < min_increase:
+                new_distance = distances[chosen_index] - distance_matrix[chosen_subtour[-1]][0] + distance_matrix[chosen_subtour[-1]][city] + distance_matrix[city][0]
+                if new_distance < min_distance:
                     chosen_city = city
-                    min_increase = increase
-
-            # Cập nhật subtour đã chọn
-            tours[chosen_index].append(chosen_city)
-            distances[chosen_index] += min_increase
+                    min_distance = new_distance
+            distances[chosen_index] = min_distance
+            tours[chosen_index] = chosen_subtour + [chosen_city]
             unvisited.remove(chosen_city)
-
-        # Đưa tất cả subtours trở về depot
-        return [tour + [0] for tour in tours]
+                
+        return [tour + [0] for tour in tours] # complete each subtour back to source depot
     
     def problem_transformations(self, problem: Union[GraphV2ProblemMulti]):
         return problem

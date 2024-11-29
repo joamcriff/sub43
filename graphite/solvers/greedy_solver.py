@@ -78,14 +78,6 @@ if __name__=="__main__":
     # print(f"{solver.__class__.__name__} Solution: {route}")
     # print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
 
-     # Initialize and run NearestNeighbourSolver
-    # greedy_solver = NearestNeighbourSolver(problem_types=[test_problem])
-    # start_time = time.time()
-    # nn_route = asyncio.run(greedy_solver.solve_problem(test_problem))
-    # nn_total_distance = nn_route  # Adjust based on how the distance is returned by NearestNeighbourSolver
-    # print(f"{greedy_solver.__class__.__name__} Tour: {nn_route}")
-    # print(f"Total distance of the NearestNeighbourSolver tour: {nn_total_distance}")
-    # print(f"{greedy_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
 
     ## Test case for GraphV2Problem
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges

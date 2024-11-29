@@ -24,7 +24,7 @@ BENCHMARK_SOLUTIONS = {
     'Metric TSP': LKHSolver,
     'General TSP': LKHSolver,
     'Metric mTSP': LKHSolver,
-    'General mTSP': LKHSolver,
+    'General mTSP': LKHSolver
 } # mapping benchmark solvers to each problem
 
 COST_FUNCTIONS = {
@@ -34,6 +34,6 @@ COST_FUNCTIONS = {
     'General mTSP': get_multi_minmax_tour_distance
 }
 
-HEURISTIC_SOLVERS = [NearestNeighbourSolver, BeamSearchSolver, HPNSolver, LKHSolver]
+HEURISTIC_SOLVERS = [NearestNeighbourSolver, BeamSearchSolver, HPNSolver]
 
 EXACT_SOLVERS = [DPSolver]
