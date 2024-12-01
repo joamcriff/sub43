@@ -20,7 +20,7 @@
 # Defines class for create a dataset based on the synthetic distribution
 from abc import ABC, abstractmethod
 from typing import List, Union, Dict
-from graphite.solvers import NearestNeighbourSolver, NearestNeighbourMultiSolver, LKHSolver
+from graphite.solvers import NearestNeighbourSolver, NearestNeighbourMultiSolver
 from graphite.protocol import GraphV2Problem, GraphV2ProblemMulti, MAX_SALESMEN
 import os
 import random
@@ -273,7 +273,7 @@ if __name__=="__main__":
     sample_problem = problems[0]
     MetricMTSPV2Generator.recreate_edges(sample_problem, mock.loaded_datasets)
     print(f"Took {time.time() - start_time} to generate {n_samples} samples")
-    solver = LKHSolver()
+    solver = NearestNeighbourMultiSolver()
     
     print(type(sample_problem))
     print('Sample metric mtsp path: ', end='')

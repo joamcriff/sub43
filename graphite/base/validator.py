@@ -82,8 +82,6 @@ class BaseValidatorNeuron(BaseNeuron):
 
         self.uid_query_sets = []
 
-        self.uid_query_sets = []
-
         self.sync()
 
         # Serve axon to enable external connections.
