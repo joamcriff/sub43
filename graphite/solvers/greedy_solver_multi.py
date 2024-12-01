@@ -95,35 +95,35 @@ class NearestNeighbourMultiSolver(BaseSolver):
     def problem_transformations(self, problem: Union[GraphV2ProblemMulti]):
         return problem
 
-if __name__=="__main__":
-    # runs the solver on a test Metric mTSP
-    class Mock:
-        def __init__(self) -> None:
-            pass
+# if __name__=="__main__":
+#     # runs the solver on a test Metric mTSP
+#     class Mock:
+#         def __init__(self) -> None:
+#             pass
 
-        def recreate_edges(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
-            node_coords_np = self.loaded_datasets[problem.dataset_ref]["data"]
-            node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
-            if problem.cost_function == "Geom":
-                return geom_edges(node_coords)
-            elif problem.cost_function == "Euclidean2D":
-                return euc_2d_edges(node_coords)
-            elif problem.cost_function == "Manhatten2D":
-                return man_2d_edges(node_coords)
-            else:
-                return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
+#         def recreate_edges(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
+#             node_coords_np = self.loaded_datasets[problem.dataset_ref]["data"]
+#             node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
+#             if problem.cost_function == "Geom":
+#                 return geom_edges(node_coords)
+#             elif problem.cost_function == "Euclidean2D":
+#                 return euc_2d_edges(node_coords)
+#             elif problem.cost_function == "Manhatten2D":
+#                 return man_2d_edges(node_coords)
+#             else:
+#                 return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
     
-    mock = Mock()
+#     mock = Mock()
 
-    load_default_dataset(mock)
+#     load_default_dataset(mock)
 
-    n_nodes = 500
-    m = 4
+#     n_nodes = 500
+#     m = 4
 
-    test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
-    test_problem.edges = mock.recreate_edges(test_problem)
-    solver = NearestNeighbourMultiSolver(problem_types=[test_problem])
-    start_time = time.time()
-    route = asyncio.run(solver.solve_problem(test_problem))
-    print(f"{solver.__class__.__name__} Solution: {route}")
-    print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
+#     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
+#     test_problem.edges = mock.recreate_edges(test_problem)
+#     solver = NearestNeighbourMultiSolver(problem_types=[test_problem])
+#     start_time = time.time()
+#     route = asyncio.run(solver.solve_problem(test_problem))
+#     print(f"{solver.__class__.__name__} Solution: {route}")
+#     print(f"{solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
