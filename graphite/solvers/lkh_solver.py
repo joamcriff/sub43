@@ -65,21 +65,21 @@ class LKHSolver(BaseSolver):
 
     async def solve(self, formatted_problem, future_id: int) -> List[List[int]]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
-            tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
-            tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
+             tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
+             tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
 
             problem_file_content = self.create_problem_file(formatted_problem.edges, formatted_problem.n_salesmen)
             problem_file.write(problem_file_content)
             problem_file.flush()
-            salesmen = formatted_problem.n_salesmen
-            
+
             parameter_file_content = self.create_parameter_file(
-                problem_file.name, tour_file.name, salesmen, len(formatted_problem.edges)
+                problem_file.name, tour_file.name, formatted_problem.n_salesmen, len(formatted_problem.edges)
             )
             parameter_file.write(parameter_file_content)
             parameter_file.flush()
+
             subprocess.run([self.lkh_path, parameter_file.name], check=True)
-            
+
             tour_file.seek(0)
             tour = self.parse_tour_file(tour_file.name)
 
@@ -87,33 +87,15 @@ class LKHSolver(BaseSolver):
         os.remove(parameter_file.name)
         os.remove(tour_file.name)
 
-        # Transform the tour to match the output format of NearestNeighbourMultiSolver
+        # Transform the tour to match the output format of Greedy
         tours = self.split_into_sublists(tour[1:], formatted_problem.n_salesmen)
-        
-        # Debugging output to verify tours
-        all_nodes = set()
-        for idx, tour in enumerate(tours):
-            print(f"Tour for salesman {idx + 1}: {tour}")
-            all_nodes.update(tour)
-        
         closed_tours = [[0] + tour + [0] for tour in tours]
 
-        # Verify that all nodes except the depot are included exactly once
-        expected_nodes = set(range(1, len(formatted_problem.edges)))  # Nodes 1 to n-1
-        visited_nodes = set(node for tour in closed_tours for node in tour if node != 0)
-        
-        print("Visited nodes:", sorted(visited_nodes))
-        print("Expected nodes:", sorted(expected_nodes))
-        
-        # Detailed difference check
-        missing_nodes = expected_nodes - visited_nodes
-        extra_nodes = visited_nodes - expected_nodes
-        
-        assert missing_nodes == set() and extra_nodes == set(), \
-            f"Missing nodes: {missing_nodes}, Extra nodes: {extra_nodes}"
-        
+        # Verify correctness: all nodes are visited exactly once
+        self.verify_tour(closed_tours, len(formatted_problem.edges))
+
         return closed_tours
-    
+
     def split_into_sublists(self, original_list, n_salesmen):
         n = len(original_list)
         sublist_size = n // n_salesmen
@@ -123,11 +105,7 @@ class LKHSolver(BaseSolver):
         start_index = 0
 
         for i in range(n_salesmen):
-            if i < remainder:
-                size = sublist_size + 1
-            else:
-                size = sublist_size
-                
+            size = sublist_size + (1 if i < remainder else 0)
             sublists.append(original_list[start_index:start_index + size])
             start_index += size
 
@@ -135,10 +113,10 @@ class LKHSolver(BaseSolver):
 
     def calculate_total_distance(self, tour, distance_matrix):
         total_distance = 0
-        for i in range(len(tour)):
-            total_distance += distance_matrix[tour[i]][tour[(i + 1) % len(tour)]]
+        for i in range(len(tour) - 1):
+            total_distance += distance_matrix[tour[i]][tour[i + 1]]
         return total_distance
-    
+
     def parse_tour_file(self, tour_file_path):
         tour = []
         with open(tour_file_path, 'r') as file:
@@ -149,9 +127,18 @@ class LKHSolver(BaseSolver):
                 elif line.strip() == '-1':
                     break
                 elif in_tour_section:
-                    tour.append(int(line.strip()) - 1)  # LKH uses 1-based indexing
-        tour.append(tour[0])  # Ensure the tour closes by returning to the start
+                    tour.append(int(line.strip()) - 1)  # Convert from 1-based to 0-based
         return tour
+
+    def verify_tour(self, closed_tours, total_nodes):
+        visited_nodes = set(node for tour in closed_tours for node in tour if node != 0)
+        expected_nodes = set(range(1, total_nodes))  # Nodes 1 to total_nodes-1
+
+        missing_nodes = expected_nodes - visited_nodes
+        extra_nodes = visited_nodes - expected_nodes
+
+        assert not missing_nodes and not extra_nodes, \
+            f"Tour verification failed! Missing nodes: {missing_nodes}, Extra nodes: {extra_nodes}"
 
     def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
         return problem
