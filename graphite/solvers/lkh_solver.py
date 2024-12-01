@@ -164,7 +164,7 @@ if __name__ == "__main__":
     load_default_dataset(mock)
 
     n_nodes = 2000
-    m = 5
+    m = 10
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
 
@@ -179,6 +179,11 @@ if __name__ == "__main__":
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
     score1 = get_multi_minmax_tour_distance(test_synapse)
 
+    solver3 = NearestNeighbourMultiSolver(problem_types=[test_problem])
+    route3 = asyncio.run(solver1.solve_problem(test_problem))
+    test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
+    score3 = get_multi_minmax_tour_distance(test_synapse)
+
     solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
@@ -186,4 +191,4 @@ if __name__ == "__main__":
 
     # print(f"{lkh_solver.__class__.__name__} Tour: {route}")
     # print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    print(f"LKH scored: {score1} while Multi scored: {score2}")
+    print(f"insert scored: {score1} while Multi2 scored: {score2} and Multi scored: {score3}")
