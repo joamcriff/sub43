@@ -17,19 +17,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import List, Union
-import matplotlib.pyplot as plt
-from graphite.solvers.base_solver import BaseSolver
-from graphite.protocol import GraphV1Problem, GraphV2Problem, GraphV2ProblemMulti, GraphV2Synapse
-from graphite.utils.graph_utils import timeout, get_multi_minmax_tour_distance
-from graphite.data.dataset_utils import load_default_dataset
-from graphite.data.distance import geom_edges, euc_2d_edges, man_2d_edges
-import numpy as np
-import time
-import asyncio
 import random
+from typing import List, Union
 
-import bittensor as bt
+import numpy as np
+
+from graphite.protocol import GraphV2Problem, GraphV2ProblemMulti
+from graphite.solvers.base_solver import BaseSolver
+
 
 class NearestNeighbourMultiSolver(BaseSolver):
     def __init__(self, problem_types:List[GraphV2Problem]=[GraphV2ProblemMulti()]):

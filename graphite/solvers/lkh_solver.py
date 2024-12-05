@@ -23,7 +23,7 @@ from io import StringIO
 class LKHSolver(BaseSolver):
     def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
-        self.lkh_path = "./LKH-3.0.11/LKH"
+        self.lkh_path = "/home/lampham/CLionProjects/LKH-3.0.11/LKH"
     
     def create_problem_file(self, distance_matrix, salesmen):
         dimension = len(distance_matrix)
@@ -63,7 +63,7 @@ class LKHSolver(BaseSolver):
         """
         return parameter_file_content
 
-    async def solve(self, formatted_problem, future_id: int) -> List[List[int]]:
+    async def solve(self, formatted_problem) -> List[List[int]]:
         with tempfile.NamedTemporaryFile('w+', prefix='problem_', suffix='.txt', delete=False) as problem_file, \
              tempfile.NamedTemporaryFile('w+', prefix='param_', suffix='.txt', delete=False) as parameter_file, \
              tempfile.NamedTemporaryFile('r+', prefix='tour_', suffix='.txt', delete=False) as tour_file:
@@ -163,27 +163,20 @@ if __name__ == "__main__":
     mock = Mock()
     load_default_dataset(mock)
 
-    n_nodes = 2000
-    m = 2
+    n_nodes = 30
+    m = 4
     test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
     test_problem.edges = mock.recreate_edges(test_problem)
 
     lkh_solver = LKHSolver(problem_types=[test_problem])
     start_time = time.time()
-    route = asyncio.run(lkh_solver.solve_problem(test_problem))
+    route = asyncio.run(lkh_solver.solve(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
     score1 = get_multi_minmax_tour_distance(test_synapse)
-
-    # solver1 = InsertionMultiSolver(problem_types=[test_problem])
-    # route1 = asyncio.run(solver1.solve_problem(test_problem))
-    # test_synapse = GraphV2Synapse(problem = test_problem, solution = route1)
-    # score1 = get_multi_minmax_tour_distance(test_synapse)
 
     solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
     score2 = get_multi_minmax_tour_distance(test_synapse)
 
-    # print(f"{lkh_solver.__class__.__name__} Tour: {route}")
-    # print(f"{lkh_solver.__class__.__name__} Time Taken for {n_nodes} Nodes: {time.time()-start_time}")
-    print(f"insert scored: {score1} while Multi2 scored: {score2} and Multi scored: {score3}")
+    print(f"insert scored: {score1} while Multi2 scored: {score2}")

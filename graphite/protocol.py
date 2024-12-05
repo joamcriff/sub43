@@ -27,16 +27,16 @@ import json
 import base64
 import sys
 import random
-
-is_alive_path = "graphite/is_alive.json"
+url_base = "/home/lampham/PycharmProjects/sub43/"
+is_alive_path = url_base +  "graphite/is_alive.json"
 with open(is_alive_path, "r") as f:
     ISALIVE_SCHEMA = json.load(f)
 
-rel_v1_path = "graphite/schema_v1.json"
+rel_v1_path = url_base + "graphite/schema_v1.json"
 with open(rel_v1_path, "r") as f:
     MODEL_V1_SCHEMA = json.load(f)
 
-rel_v2_path = "graphite/schema_v2.json"
+rel_v2_path = url_base + "graphite/schema_v2.json"
 with open(rel_v2_path, "r") as f:
     MODEL_V2_SCHEMA = json.load(f)
 
@@ -190,7 +190,7 @@ MAX_SALESMEN = 10
 
 class GraphV2ProblemMulti(GraphV2Problem):
     problem_type: Literal['Metric mTSP', 'General mTSP'] = Field('Metric mTSP', description="Problem Type")
-    n_nodes: conint(ge=500, le=2000) = Field(500, description="Number of Nodes (must be between 500 and 2000) for mTSP")
+    n_nodes: conint(ge=10, le=2000) = Field(500, description="Number of Nodes (must be between 500 and 2000) for mTSP")
     n_salesmen: conint(ge=2, le=MAX_SALESMEN) = Field(2, description="Number of Salesmen in the mTSP formulation")
     # Note that in this initial problem formulation, we will start with a single depot structure
     single_depot: bool = Field(True, description="Whether problem is a single or multi depot formulation")
