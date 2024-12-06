@@ -14,7 +14,7 @@ from graphite.utils.graph_utils import get_multi_minmax_tour_distance
 class HGASolver(BaseSolver):
     def __init__(self, problem_types: List[GraphV2Problem] = [GraphV2ProblemMulti()]):
         super().__init__(problem_types=problem_types)
-        self.HGA_path = "/home/lampham/julia-tsp/m-TSP/test/solve_mtsp.jl"
+        self.HGA_path = "/home/lampham/PycharmProjects/sub43/graphite/m-TSP-julia/test/solve_mtsp.jl"
 
     def prepare_mtsp_input(n_vehicles, dist_mtx):
         # Prepare your data
@@ -54,40 +54,78 @@ class HGASolver(BaseSolver):
         return problem
 
 
+import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 if __name__ == "__main__":
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
+
+    total_start_time = time.time()
+
+
     class Mock:
         def __init__(self) -> None:
             pass
 
         def recreate_edges(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
+            edge_start_time = time.time()
             node_coords_np = self.loaded_datasets[problem.dataset_ref]["data"]
             node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
+
             if problem.cost_function == "Geom":
-                return geom_edges(node_coords),node_coords
+                edges = geom_edges(node_coords)
             elif problem.cost_function == "Euclidean2D":
-                return euc_2d_edges(node_coords),node_coords
+                edges = euc_2d_edges(node_coords)
             elif problem.cost_function == "Manhatten2D":
-                return man_2d_edges(node_coords),node_coords
+                edges = man_2d_edges(node_coords)
             else:
                 return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
 
+            logger.info(f"Edge recreation took: {time.time() - edge_start_time:.2f} seconds")
+            return edges, node_coords
+
+
+    # Initialize mock and load data
+    init_start_time = time.time()
     mock = Mock()
     load_default_dataset(mock)
+    logger.info(f"Initialization and data loading took: {time.time() - init_start_time:.2f} seconds")
 
-    n_nodes = 200
+    # Problem setup
+    setup_start_time = time.time()
+    n_nodes = 2000
     m = 3
-    test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)), n_nodes),
-                                     dataset_ref="Asia_MSB", n_salesmen=m, depots=[0] * m)
+    test_problem = GraphV2ProblemMulti(
+        n_nodes=n_nodes,
+        selected_ids=random.sample(list(range(100000)), n_nodes),
+        dataset_ref="Asia_MSB",
+        n_salesmen=m,
+        depots=[0] * m,
+        cost_function="Euclidean2D"
+    )
     test_problem.edges, node_coords = mock.recreate_edges(test_problem)
+    logger.info(f"Problem setup took: {time.time() - setup_start_time:.2f} seconds")
+
+    # HGA Solver
+    hga_start_time = time.time()
     hga_solver = HGASolver(problem_types=[test_problem])
-    start_time = time.time()
     route = asyncio.run(hga_solver.solve(test_problem))
     test_synapse = GraphV2Synapse(problem=test_problem, solution=route)
     score1 = get_multi_minmax_tour_distance(test_synapse)
+    logger.info(f"HGA Solver took: {time.time() - hga_start_time:.2f} seconds")
+
+    # Nearest Neighbour Solver
+    nn_start_time = time.time()
     solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
     test_synapse = GraphV2Synapse(problem=test_problem, solution=route2)
     score2 = get_multi_minmax_tour_distance(test_synapse)
+    logger.info(f"Nearest Neighbour Solver took: {time.time() - nn_start_time:.2f} seconds")
 
+    # Final results
+    logger.info(f"Total execution time: {time.time() - total_start_time:.2f} seconds")
     print(f"hga scored: {score1} while Multi2 scored: {score2}")

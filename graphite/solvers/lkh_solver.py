@@ -142,41 +142,79 @@ class LKHSolver(BaseSolver):
 
     def problem_transformations(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
         return problem
-    
+
+
+import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 if __name__ == "__main__":
     from graphite.data.distance import geom_edges, man_2d_edges, euc_2d_edges
+
+    total_start_time = time.time()
+
+
     class Mock:
         def __init__(self) -> None:
-            pass        
+            pass
 
         def recreate_edges(self, problem: Union[GraphV2Problem, GraphV2ProblemMulti]):
+            edge_start_time = time.time()
             node_coords_np = self.loaded_datasets[problem.dataset_ref]["data"]
             node_coords = np.array([node_coords_np[i][1:] for i in problem.selected_ids])
+
             if problem.cost_function == "Geom":
-                return geom_edges(node_coords)
+                edges = geom_edges(node_coords)
             elif problem.cost_function == "Euclidean2D":
-                return euc_2d_edges(node_coords)
+                edges = euc_2d_edges(node_coords)
             elif problem.cost_function == "Manhatten2D":
-                return man_2d_edges(node_coords)
+                edges = man_2d_edges(node_coords)
             else:
                 return "Only Geom, Euclidean2D, and Manhatten2D supported for now."
+
+            logger.info(f"Edge recreation took: {time.time() - edge_start_time:.2f} seconds")
+            return edges
+
+
+    # Initialize mock and load data
+    init_start_time = time.time()
     mock = Mock()
     load_default_dataset(mock)
+    logger.info(f"Initialization took: {time.time() - init_start_time:.2f} seconds")
 
+    # Problem setup
+    setup_start_time = time.time()
     n_nodes = 30
     m = 4
-    test_problem = GraphV2ProblemMulti(n_nodes=n_nodes, selected_ids=random.sample(list(range(100000)),n_nodes), dataset_ref="Asia_MSB", n_salesmen=m, depots=[0]*m)
+    test_problem = GraphV2ProblemMulti(
+        n_nodes=n_nodes,
+        selected_ids=random.sample(list(range(100000)), n_nodes),
+        dataset_ref="Asia_MSB",
+        n_salesmen=m,
+        depots=[0] * m
+    )
     test_problem.edges = mock.recreate_edges(test_problem)
+    logger.info(f"Problem setup took: {time.time() - setup_start_time:.2f} seconds")
 
+    # LKH Solver
+    lkh_start_time = time.time()
     lkh_solver = LKHSolver(problem_types=[test_problem])
-    start_time = time.time()
     route = asyncio.run(lkh_solver.solve(test_problem))
-    test_synapse = GraphV2Synapse(problem = test_problem, solution = route)
+    test_synapse = GraphV2Synapse(problem=test_problem, solution=route)
     score1 = get_multi_minmax_tour_distance(test_synapse)
+    logger.info(f"LKH Solver took: {time.time() - lkh_start_time:.2f} seconds")
 
+    # Nearest Neighbour Solver
+    nn_start_time = time.time()
     solver2 = NearestNeighbourMultiSolver2(problem_types=[test_problem])
     route2 = asyncio.run(solver2.solve_problem(test_problem))
-    test_synapse = GraphV2Synapse(problem = test_problem, solution = route2)
+    test_synapse = GraphV2Synapse(problem=test_problem, solution=route2)
     score2 = get_multi_minmax_tour_distance(test_synapse)
+    logger.info(f"Nearest Neighbour Solver took: {time.time() - nn_start_time:.2f} seconds")
 
-    print(f"insert scored: {score1} while Multi2 scored: {score2}")
+    # Final results
+    logger.info(f"Total execution time: {time.time() - total_start_time:.2f} seconds")
+    print(f"LKH scored: {score1} while Multi2 scored: {score2}")
