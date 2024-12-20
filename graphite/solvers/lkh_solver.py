@@ -194,7 +194,8 @@ if __name__ == "__main__":
         selected_ids=random.sample(list(range(100000)), n_nodes),
         dataset_ref="Asia_MSB",
         n_salesmen=m,
-        depots=[0] * m
+        depots=[0] * m,
+        cost_function="Euclidean2D"
     )
     test_problem.edges = mock.recreate_edges(test_problem)
     logger.info(f"Problem setup took: {time.time() - setup_start_time:.2f} seconds")

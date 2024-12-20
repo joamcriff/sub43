@@ -295,8 +295,6 @@ function generate_initial_population(TT::Matrix{Float64}, K::Int, mu::Int, tsp_t
 end
 
 
-
-
 function diversify!(population::Vector{Chromosome}, TT::Matrix{Float64}, K::Int, mu::Int, tsp_tours::Vector{Vector{Int}}, customers::Matrix{Float64}, depot::Vector{Float64}, num::Int)
     n_tours = length(tsp_tours)
     n_nodes = size(TT)[1] - 2
